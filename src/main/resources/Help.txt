@@ -1,0 +1,8 @@
+Welcome to the Historical Artifact Catalog!
+
+- Use "File > Import File" to load artifacts from a JSON file.
+- Use "File > Export File" to save your current artifacts.
+- Use the table to view all artifact details.
+- You can add, edit, or delete entries in future versions.
+
+Thank you for using our catalog!
