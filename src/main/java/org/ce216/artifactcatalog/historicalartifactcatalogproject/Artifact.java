@@ -3,7 +3,7 @@ package org.ce216.artifactcatalog.historicalartifactcatalogproject;
 import java.util.List;
 
 public class Artifact {
-    private String artifactId;
+    private int artifactId;
     private String artifactName;
     private String category;
     private String civilization;
@@ -17,7 +17,7 @@ public class Artifact {
 
     public Artifact() {}
 
-    public Artifact(String artifactId, String artifactName, String category, String civilization,
+    public Artifact(int artifactId, String artifactName, String category, String civilization,
                     String discoveryLocation, String composition, String discoveryDate, String currentPlace,
                     double width, double length, double height, double weight, List<String> tags) {
         this.artifactId = artifactId;
@@ -34,11 +34,11 @@ public class Artifact {
         this.weight = weight;
         this.tags = tags;
     }
-    public String getArtifactId() {
+    public int getArtifactId() {
         return artifactId;
     }
 
-    public void setArtifactId(String artifactId) {
+    public void setArtifactId(int artifactId) {
         this.artifactId = artifactId;
     }
 

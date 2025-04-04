@@ -2,12 +2,15 @@ package org.ce216.artifactcatalog.historicalartifactcatalogproject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Application;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,11 +19,13 @@ import java.util.List;
 public class MainWindow extends Application {
 
     private List<Artifact> artifactList = new ArrayList<>(); // Class-level list
+    private TableView<Artifact> tableView = new TableView<>();
 
     @Override
     public void start(Stage stage) throws IOException {
         VBox vbox = new VBox();
         HBox hbox = new HBox();
+
         MenuBar menuBar = new MenuBar();
         Menu mfile = new Menu("File");
         MenuItem addImportFileButton = new MenuItem("Import File");
@@ -32,9 +37,34 @@ public class MainWindow extends Application {
         addImportFileButton.setOnAction(e -> importFile(stage));
         addExportFileButton.setOnAction(e -> exportFile(stage));
 
-        vbox.getChildren().addAll(menuBar, hbox);
+        // Table Columns
+        TableColumn<Artifact, Integer> idCol = new TableColumn<>("ID");
+        idCol.setCellValueFactory(data -> new SimpleObjectProperty<>(data.getValue().getArtifactId()));
 
-        Scene scene = new Scene(vbox, 400, 300);
+        TableColumn<Artifact, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getArtifactName()));
+
+        TableColumn<Artifact, String> categoryCol = new TableColumn<>("Category");
+        categoryCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCategory()));
+
+        TableColumn<Artifact, String> civCol = new TableColumn<>("Civilization");
+        civCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCivilization()));
+
+        TableColumn<Artifact, String> locationCol = new TableColumn<>("Discovery Location");
+        locationCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getDiscoveryLocation()));
+
+        TableColumn<Artifact, String> dateCol = new TableColumn<>("Discovery Date");
+        dateCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getDiscoveryDate()));
+
+        TableColumn<Artifact, String> placeCol = new TableColumn<>("Current Place");
+        placeCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCurrentPlace()));
+
+        tableView.getColumns().addAll(idCol, nameCol, categoryCol, civCol, locationCol, dateCol, placeCol);
+        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        vbox.getChildren().addAll(menuBar, hbox, tableView);
+
+        Scene scene = new Scene(vbox, 1000, 500);
         stage.setTitle("Historical Artifact Catalog");
         stage.setScene(scene);
         stage.show();
@@ -51,6 +81,7 @@ public class MainWindow extends Application {
             try {
                 ArtifactManager wrapper = mapper.readValue(selectedFile, ArtifactManager.class);
                 artifactList = wrapper.getArtifacts(); // Save to class-level list
+                tableView.getItems().setAll(artifactList); // Load into TableView
                 System.out.println("Imported " + artifactList.size() + " artifacts.");
                 for (Artifact artifact : artifactList) {
                     System.out.println(artifact);
