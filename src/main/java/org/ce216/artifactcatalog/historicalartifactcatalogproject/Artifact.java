@@ -15,6 +15,8 @@ public class Artifact {
     private List<String> tags;
     private String imagePath;
 
+    public Artifact() {}
+
     public Artifact(String artifactId, String artifactName, String category, String civilization,
                     String discoveryLocation, String composition, String discoveryDate, String currentPlace,
                     double width, double length, double height, double weight, List<String> tags) {
