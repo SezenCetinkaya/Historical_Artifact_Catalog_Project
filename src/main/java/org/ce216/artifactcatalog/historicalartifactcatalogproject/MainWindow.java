@@ -67,7 +67,8 @@ public class MainWindow extends Application {
             Artifact selected = tableView.getSelectionModel().getSelectedItem();
             if (selected != null) {
                 artifactList.remove(selected);
-                tableView.getItems().remove(selected);
+                reassignArtifactIds(); // <== Burada yeni fonksiyonu çağırıyoruz
+                tableView.getItems().setAll(artifactList);
             } else {
                 showAlert("Please select an artifact to delete.");
             }
@@ -131,6 +132,13 @@ public class MainWindow extends Application {
         stage.setScene(scene);
         stage.show();
     }
+
+    private void reassignArtifactIds() {
+        for (int i = 0; i < artifactList.size(); i++) {
+            artifactList.get(i).setArtifactId(i + 1); // ID’ler 1’den başlasın
+        }
+    }
+
 
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
