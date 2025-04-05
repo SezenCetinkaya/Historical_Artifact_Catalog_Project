@@ -35,20 +35,43 @@ public class MainWindow extends Application {
         Menu mhelp = new Menu("Help");
         Menu mview = new Menu("View");
         Menu mfunctions=new Menu("Operations");
+
         MenuItem addImportFileButton = new MenuItem("Import File");
         MenuItem addExportFileButton = new MenuItem("Export File");
         MenuItem viewHelpItem = new MenuItem("View Help");
         MenuItem showTableItem = new MenuItem("Show Table");
         MenuItem createArtifactItem=new MenuItem("Create Artifact");
+        MenuItem editArtifactItem = new MenuItem("Edit Artifact");
+        MenuItem deleteArtifactItem = new MenuItem("Delete Artifact");
 
         mfile.getItems().addAll(addExportFileButton, addImportFileButton);
         mhelp.getItems().add(viewHelpItem);  // Help menüsünde View Help butonu
         mview.getItems().add(showTableItem);  // View menüsünde Show Table butonu
-        mfunctions.getItems().addAll(createArtifactItem); //Operations menüsünde Create butonları
+
+        mfunctions.getItems().addAll(createArtifactItem, editArtifactItem, deleteArtifactItem); //Operations menüsünde Create butonları
         menuBar.getMenus().addAll(mfile, mhelp, mview,mfunctions);
 
         addImportFileButton.setOnAction(e -> importFile(stage));
         addExportFileButton.setOnAction(e -> exportFile(stage));
+
+        editArtifactItem.setOnAction(e -> {
+            Artifact selected = tableView.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                showEditArtifactDialog(selected); // artık MainWindow içindeki metodu çağırıyoruz
+            } else {
+                showAlert("Please select an artifact to edit.");
+            }
+        });
+
+        deleteArtifactItem.setOnAction(e -> {
+            Artifact selected = tableView.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                artifactList.remove(selected);
+                tableView.getItems().remove(selected);
+            } else {
+                showAlert("Please select an artifact to delete.");
+            }
+        });
 
 
         // Table Columns
@@ -108,6 +131,61 @@ public class MainWindow extends Application {
         stage.setScene(scene);
         stage.show();
     }
+
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Info");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showEditArtifactDialog(Artifact artifact) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Edit Artifact");
+
+        ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+        TextField nameField = new TextField(artifact.getArtifactName());
+        TextField categoryField = new TextField(artifact.getCategory());
+        TextField civilizationField = new TextField(artifact.getCivilization());
+        TextField locationField = new TextField(artifact.getDiscoveryLocation());
+        TextField dateField = new TextField(artifact.getDiscoveryDate());
+        TextField placeField = new TextField(artifact.getCurrentPlace());
+        TextField compositionField = new TextField(artifact.getComposition());
+
+        VBox vbox = new VBox(5);
+        vbox.getChildren().addAll(
+                new Label("Artifact Name:"), nameField,
+                new Label("Category:"), categoryField,
+                new Label("Civilization:"), civilizationField,
+                new Label("Discovery Location:"), locationField,
+                new Label("Discovery Date:"), dateField,
+                new Label("Current Place:"), placeField,
+                new Label("Composition:"), compositionField
+        );
+
+        dialog.getDialogPane().setContent(vbox);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == saveButtonType) {
+                artifact.setArtifactName(nameField.getText());
+                artifact.setCategory(categoryField.getText());
+                artifact.setCivilization(civilizationField.getText());
+                artifact.setDiscoveryLocation(locationField.getText());
+                artifact.setDiscoveryDate(dateField.getText());
+                artifact.setCurrentPlace(placeField.getText());
+                artifact.setComposition(compositionField.getText());
+
+                tableView.refresh(); // Tabloyu güncelle
+            }
+            return null;
+        });
+
+        dialog.showAndWait();
+    }
+
 
 
 
