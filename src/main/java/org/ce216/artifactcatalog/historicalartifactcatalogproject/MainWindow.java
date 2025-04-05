@@ -41,22 +41,23 @@ public class MainWindow extends Application {
         MenuItem viewHelpItem = new MenuItem("View Help");
         MenuItem showTableItem = new MenuItem("Show Table");
         MenuItem createArtifactItem=new MenuItem("Create Artifact");
-        MenuItem editArtifactItem = new MenuItem("Edit Artifact");
         MenuItem deleteArtifactItem = new MenuItem("Delete Artifact");
+        MenuItem editArtifactItem = new MenuItem("Edit Artifact");
+
 
         mfile.getItems().addAll(addExportFileButton, addImportFileButton);
         mhelp.getItems().add(viewHelpItem);  // Help menüsünde View Help butonu
         mview.getItems().add(showTableItem);  // View menüsünde Show Table butonu
 
-        mfunctions.getItems().addAll(createArtifactItem, editArtifactItem, deleteArtifactItem); //Operations menüsünde Create butonları
-        menuBar.getMenus().addAll(mfile, mhelp, mview,mfunctions);
+        mfunctions.getItems().addAll(createArtifactItem, deleteArtifactItem, editArtifactItem); //Operations menüsünde Create Delete Edit butonları
+        menuBar.getMenus().addAll(mfile, mhelp, mview, mfunctions);
 
         addImportFileButton.setOnAction(e -> importFile(stage));
         addExportFileButton.setOnAction(e -> exportFile(stage));
 
         editArtifactItem.setOnAction(e -> {
             Artifact selected = tableView.getSelectionModel().getSelectedItem();
-            if (selected != null) {
+            if (selected != null) {  //seçilen artifact üzerinden edit işlemi yapma
                 showEditArtifactDialog(selected); // artık MainWindow içindeki metodu çağırıyoruz
             } else {
                 showAlert("Please select an artifact to edit.");
@@ -65,9 +66,9 @@ public class MainWindow extends Application {
 
         deleteArtifactItem.setOnAction(e -> {
             Artifact selected = tableView.getSelectionModel().getSelectedItem();
-            if (selected != null) {
+            if (selected != null) {  //seçilen artifact üzerinden delete işlemi yapma
                 artifactList.remove(selected);
-                reassignArtifactIds(); // <== Burada yeni fonksiyonu çağırıyoruz
+                reassignArtifactIDs(); // <== Burada yeni fonksiyonu çağırıyoruz
                 tableView.getItems().setAll(artifactList);
             } else {
                 showAlert("Please select an artifact to delete.");
@@ -133,16 +134,16 @@ public class MainWindow extends Application {
         stage.show();
     }
 
-    private void reassignArtifactIds() {
+    private void reassignArtifactIDs() {
         for (int i = 0; i < artifactList.size(); i++) {
             artifactList.get(i).setArtifactId(i + 1); // ID’ler 1’den başlasın
         }
     }
 
 
-    private void showAlert(String message) {
+    private void showAlert(String message) {  //artifact seçilmediğinde kullanıcıya error mesajı verecek
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Info");
+        alert.setTitle("Error");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
@@ -161,7 +162,6 @@ public class MainWindow extends Application {
         TextField locationField = new TextField(artifact.getDiscoveryLocation());
         TextField dateField = new TextField(artifact.getDiscoveryDate());
         TextField placeField = new TextField(artifact.getCurrentPlace());
-        TextField compositionField = new TextField(artifact.getComposition());
 
         VBox vbox = new VBox(5);
         vbox.getChildren().addAll(
@@ -170,8 +170,7 @@ public class MainWindow extends Application {
                 new Label("Civilization:"), civilizationField,
                 new Label("Discovery Location:"), locationField,
                 new Label("Discovery Date:"), dateField,
-                new Label("Current Place:"), placeField,
-                new Label("Composition:"), compositionField
+                new Label("Current Place:"), placeField
         );
 
         dialog.getDialogPane().setContent(vbox);
@@ -184,7 +183,6 @@ public class MainWindow extends Application {
                 artifact.setDiscoveryLocation(locationField.getText());
                 artifact.setDiscoveryDate(dateField.getText());
                 artifact.setCurrentPlace(placeField.getText());
-                artifact.setComposition(compositionField.getText());
 
                 tableView.refresh(); // Tabloyu güncelle
             }
@@ -266,7 +264,6 @@ public class MainWindow extends Application {
         TextField categoryField = new TextField();
         TextField civilizationField = new TextField();
         TextField locationField = new TextField();
-        TextField compositionField = new TextField();
         TextField dateField = new TextField();
         TextField placeField = new TextField();
 
@@ -276,8 +273,7 @@ public class MainWindow extends Application {
                 new Label("Civilization:"),civilizationField,
                 new Label("Discovery Location:"),locationField,
                 new Label("Discovery Date:"),dateField,
-                new Label("Current Place:"),placeField,
-                new Label("Composition:"),compositionField
+                new Label("Current Place:"),placeField
         );
         dialog.getDialogPane().setContent(vbox);
 
@@ -290,10 +286,9 @@ public class MainWindow extends Application {
                 newArtifact.setDiscoveryLocation(locationField.getText().isEmpty() ? newArtifact.getDiscoveryLocation() : locationField.getText());
                 newArtifact.setDiscoveryDate(dateField.getText().isEmpty() ? newArtifact.getDiscoveryDate() : dateField.getText());
                 newArtifact.setCurrentPlace(placeField.getText().isEmpty() ? newArtifact.getCurrentPlace() : placeField.getText());
-                newArtifact.setComposition(compositionField.getText().isEmpty() ? newArtifact.getComposition() : compositionField.getText());
 
                 artifactList.add(newArtifact);
-                tableView.getItems().setAll(artifactList);
+                tableView.getItems().setAll(artifactList);  //eklenen artifact sonrası liste güncelleniyor
                 return newArtifact;
             }
             return null;
