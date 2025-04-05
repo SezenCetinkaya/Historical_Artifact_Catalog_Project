@@ -3,6 +3,7 @@ package org.ce216.artifactcatalog.historicalartifactcatalogproject;
 import java.util.List;
 
 public class Artifact {
+    private static int idCounter=1;
     private int artifactId;
     private String artifactName;
     private String category;
@@ -15,7 +16,17 @@ public class Artifact {
     private List<String> tags;
     private String imagePath;
 
-    public Artifact() {}
+    public Artifact() {
+        this.artifactId=idCounter++;
+        this.artifactName = "Unknown";
+        this.category = "Unknown";
+        this.civilization = "Unknown";
+        this.discoveryLocation = "Unknown";
+        this.composition = "Unknown";
+        this.discoveryDate = "Unknown";
+        this.currentPlace = "Unknown";
+    }
+
 
     public Artifact(int artifactId, String artifactName, String category, String civilization,
                     String discoveryLocation, String composition, String discoveryDate, String currentPlace,

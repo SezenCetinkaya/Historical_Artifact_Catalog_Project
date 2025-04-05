@@ -34,18 +34,22 @@ public class MainWindow extends Application {
         Menu mfile = new Menu("File");
         Menu mhelp = new Menu("Help");
         Menu mview = new Menu("View");
+        Menu mfunctions=new Menu("Operations");
         MenuItem addImportFileButton = new MenuItem("Import File");
         MenuItem addExportFileButton = new MenuItem("Export File");
         MenuItem viewHelpItem = new MenuItem("View Help");
         MenuItem showTableItem = new MenuItem("Show Table");
+        MenuItem createArtifactItem=new MenuItem("Create Artifact");
 
         mfile.getItems().addAll(addExportFileButton, addImportFileButton);
         mhelp.getItems().add(viewHelpItem);  // Help menüsünde View Help butonu
         mview.getItems().add(showTableItem);  // View menüsünde Show Table butonu
-        menuBar.getMenus().addAll(mfile, mhelp, mview);
+        mfunctions.getItems().addAll(createArtifactItem); //Operations menüsünde Create butonları
+        menuBar.getMenus().addAll(mfile, mhelp, mview,mfunctions);
 
         addImportFileButton.setOnAction(e -> importFile(stage));
         addExportFileButton.setOnAction(e -> exportFile(stage));
+
 
         // Table Columns
         TableColumn<Artifact, Integer> idCol = new TableColumn<>("ID");
@@ -93,6 +97,9 @@ public class MainWindow extends Application {
             tableView.setVisible(true);    // Tabloyu göster
             helpTextArea.setVisible(false); // Yardım metnini gizle
         });
+
+
+        createArtifactItem.setOnAction(e -> showCreateArtifactDialog(stage)); //yeni oluşturma işlemi için açılan diyalog paneli
 
         vbox.getChildren().addAll(menuBar, stackPane); // StackPane'i VBox'a ekle
 
@@ -161,6 +168,52 @@ public class MainWindow extends Application {
         }
     }
 
+    //Yeni artifact eklemek için açılan bilgileri yazma diyalog düzeni
+    private void showCreateArtifactDialog(Stage stage){
+        Dialog<Artifact> dialog = new Dialog<>();
+        dialog.setTitle("Create New Artifact");
+        ButtonType createButtonType = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);//işlemi bitirmek için CREATE butonu
+        dialog.getDialogPane().getButtonTypes().addAll(createButtonType, ButtonType.CANCEL);//işlemi iptal etmek için CANCEL butonu
+
+        VBox vbox=new VBox(5);
+        TextField nameField = new TextField();
+        TextField categoryField = new TextField();
+        TextField civilizationField = new TextField();
+        TextField locationField = new TextField();
+        TextField compositionField = new TextField();
+        TextField dateField = new TextField();
+        TextField placeField = new TextField();
+
+        vbox.getChildren().addAll(
+                new Label("Artifact Name:"),nameField,
+                new Label("Category:"),categoryField,
+                new Label("Civilization:"),civilizationField,
+                new Label("Discovery Location:"),locationField,
+                new Label("Discovery Date:"),dateField,
+                new Label("Current Place:"),placeField,
+                new Label("Composition:"),compositionField
+        );
+        dialog.getDialogPane().setContent(vbox);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton==createButtonType){
+                Artifact newArtifact=new Artifact();
+                newArtifact.setArtifactName(nameField.getText().isEmpty() ? newArtifact.getArtifactName() : nameField.getText());
+                newArtifact.setCategory(categoryField.getText().isEmpty() ? newArtifact.getCategory() : categoryField.getText());
+                newArtifact.setCivilization(civilizationField.getText().isEmpty() ? newArtifact.getCivilization() : civilizationField.getText());
+                newArtifact.setDiscoveryLocation(locationField.getText().isEmpty() ? newArtifact.getDiscoveryLocation() : locationField.getText());
+                newArtifact.setDiscoveryDate(dateField.getText().isEmpty() ? newArtifact.getDiscoveryDate() : dateField.getText());
+                newArtifact.setCurrentPlace(placeField.getText().isEmpty() ? newArtifact.getCurrentPlace() : placeField.getText());
+                newArtifact.setComposition(compositionField.getText().isEmpty() ? newArtifact.getComposition() : compositionField.getText());
+
+                artifactList.add(newArtifact);
+                tableView.getItems().setAll(artifactList);
+                return newArtifact;
+            }
+            return null;
+        });
+        dialog.showAndWait();
+    }
 
     public static void main(String[] args) {
         launch();
