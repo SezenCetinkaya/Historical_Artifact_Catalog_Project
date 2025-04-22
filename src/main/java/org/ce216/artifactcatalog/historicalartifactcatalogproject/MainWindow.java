@@ -6,7 +6,10 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -36,9 +39,57 @@ public class MainWindow extends Application {
     public void start(Stage stage) {
         VBox vbox = new VBox();
 
-        MenuBar menuBar = createMenuBar(stage);
+        // Menu
+        MenuBar menuBar = new MenuBar();
+        Menu mfile = new Menu("File");
+        Menu mhelp = new Menu("Help");
+        Menu mview = new Menu("View");
+        Menu mfunctions = new Menu("Operations");
+
+        MenuItem addImportFileButton = new MenuItem("Import File");
+        MenuItem addExportFileButton = new MenuItem("Export File");
+        MenuItem viewHelpItem = new MenuItem("View Help");
+        MenuItem showTableItem = new MenuItem("Show Table");
+        MenuItem createArtifactItem = new MenuItem("Create Artifact");
+        MenuItem editArtifactItem = new MenuItem("Edit Artifact");
+        MenuItem deleteArtifactItem = new MenuItem("Delete Artifact");
+
+        mfile.getItems().addAll(addExportFileButton, addImportFileButton);
+        mhelp.getItems().add(viewHelpItem);
+        mview.getItems().add(showTableItem);
+        mfunctions.getItems().addAll(createArtifactItem, editArtifactItem, deleteArtifactItem);
+        menuBar.getMenus().addAll(mfile, mhelp, mview, mfunctions);
+
+
+
+        // Import/Export actions
+        addImportFileButton.setOnAction(e -> importFile(stage));
+        addExportFileButton.setOnAction(e -> exportFile(stage));
+
+
         VBox filterPane = createFilterPane();
 
+        editArtifactItem.setOnAction(e -> {
+            Artifact selected = tableView.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                showEditArtifactDialog(selected);
+            } else {
+                showAlert("Please select an artifact to edit.");
+            }
+        });
+
+        deleteArtifactItem.setOnAction(e -> {
+            Artifact selected = tableView.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                artifactList.remove(selected);
+                reassignArtifactIds();
+                tableView.getItems().setAll(artifactList);
+            } else {
+                showAlert("Please select an artifact to delete.");
+            }
+        });
+
+        // Table Columns
         TableColumn<Artifact, Integer> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(data -> new SimpleObjectProperty<>(data.getValue().getArtifactId()));
 
@@ -63,46 +114,15 @@ public class MainWindow extends Application {
         tableView.getColumns().addAll(idCol, nameCol, categoryCol, civCol, locationCol, dateCol, placeCol);
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
+        // Help area
         helpTextArea.setEditable(false);
         helpTextArea.setWrapText(true);
         helpTextArea.setVisible(false);
 
-        StackPane stackPane = new StackPane(tableView, helpTextArea);
+        StackPane stackPane = new StackPane();
+        stackPane.getChildren().addAll(tableView, helpTextArea);
 
-        HBox mainContent = new HBox();
-        mainContent.getChildren().addAll(stackPane, filterPane);
-        HBox.setHgrow(stackPane, Priority.ALWAYS);
-
-        vbox.getChildren().addAll(menuBar, mainContent);
-
-        Scene scene = new Scene(vbox, 1200, 600);
-        stage.setTitle("Historical Artifact Catalog");
-        stage.setScene(scene);
-        stage.show();
-    }
-
-    private MenuBar createMenuBar(Stage stage) {
-        MenuBar menuBar = new MenuBar();
-        Menu mfile = new Menu("File");
-        Menu mhelp = new Menu("Help");
-        Menu mview = new Menu("View");
-        Menu mfunctions = new Menu("Operations");
-
-
-        MenuItem importItem = new MenuItem("Import File");
-        MenuItem exportItem = new MenuItem("Export File");
-        MenuItem helpItem = new MenuItem("View Help");
-        MenuItem showTableItem = new MenuItem("Show Table");
-
-        mfile.getItems().addAll(exportItem, importItem);
-        mhelp.getItems().add(helpItem);
-        mview.getItems().add(showTableItem);
-        menuBar.getMenus().addAll(mfile, mhelp, mview, mfunctions);
-
-        importItem.setOnAction(e -> importFile(stage));
-        exportItem.setOnAction(e -> exportFile(stage));
-
-        helpItem.setOnAction(e -> {
+        viewHelpItem.setOnAction(e -> {
             helpTextArea.setText(loadHelpText());
             helpTextArea.setVisible(true);
             tableView.setVisible(false);
@@ -113,9 +133,83 @@ public class MainWindow extends Application {
             helpTextArea.setVisible(false);
         });
 
-        return menuBar;
+
+
+        HBox mainContent = new HBox();
+        mainContent.getChildren().addAll(stackPane, filterPane);
+        HBox.setHgrow(stackPane, Priority.ALWAYS);
+
+        createArtifactItem.setOnAction(e -> showCreateArtifactDialog(stage));
+
+        vbox.getChildren().addAll(menuBar, mainContent, stackPane);
+
+
+        Scene scene = new Scene(vbox, 1200, 600);
+        stage.setTitle("Historical Artifact Catalog");
+        stage.setScene(scene);
+        stage.show();
     }
 
+    private void reassignArtifactIds() {
+        for (int i = 0; i < artifactList.size(); i++) {
+            artifactList.get(i).setArtifactId(i + 1);
+        }
+    }
+
+
+
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Info");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showEditArtifactDialog(Artifact artifact) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Edit Artifact");
+
+        ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+        TextField nameField = new TextField(artifact.getArtifactName());
+        TextField categoryField = new TextField(artifact.getCategory());
+        TextField civilizationField = new TextField(artifact.getCivilization());
+        TextField locationField = new TextField(artifact.getDiscoveryLocation());
+        TextField dateField = new TextField(artifact.getDiscoveryDate());
+        TextField placeField = new TextField(artifact.getCurrentPlace());
+        TextField compositionField = new TextField(artifact.getComposition());
+
+        VBox vbox = new VBox(5);
+        vbox.getChildren().addAll(
+                new Label("Artifact Name:"), nameField,
+                new Label("Category:"), categoryField,
+                new Label("Civilization:"), civilizationField,
+                new Label("Discovery Location:"), locationField,
+                new Label("Discovery Date:"), dateField,
+                new Label("Current Place:"), placeField,
+                new Label("Composition:"), compositionField
+        );
+
+        dialog.getDialogPane().setContent(vbox);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == saveButtonType) {
+                artifact.setArtifactName(nameField.getText());
+                artifact.setCategory(categoryField.getText());
+                artifact.setCivilization(civilizationField.getText());
+                artifact.setDiscoveryLocation(locationField.getText());
+                artifact.setDiscoveryDate(dateField.getText());
+                artifact.setCurrentPlace(placeField.getText());
+                artifact.setComposition(compositionField.getText());
+                tableView.refresh();
+            }
+            return null;
+        });
+
+        dialog.showAndWait();
+    }
 
     private VBox createFilterPane() {
         VBox filters = new VBox(5);
@@ -153,8 +247,6 @@ public class MainWindow extends Application {
         tableView.getItems().setAll(filtered);
     }
 
-
-
     private void importFile(Stage stage) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Import File");
@@ -167,9 +259,13 @@ public class MainWindow extends Application {
                 ArtifactManager wrapper = mapper.readValue(selectedFile, ArtifactManager.class);
                 artifactList = wrapper.getArtifacts();
                 tableView.getItems().setAll(artifactList);
+                System.out.println("Imported " + artifactList.size() + " artifacts.");
             } catch (IOException e) {
+                System.out.println("Failed to read JSON file.");
                 e.printStackTrace();
             }
+        } else {
+            System.out.println("No file selected.");
         }
     }
 
@@ -186,9 +282,13 @@ public class MainWindow extends Application {
 
             try {
                 mapper.writerWithDefaultPrettyPrinter().writeValue(fileToSave, wrapper);
+                System.out.println("Exported " + artifactList.size() + " artifacts to: " + fileToSave.getAbsolutePath());
             } catch (IOException e) {
+                System.out.println("Error while saving the file.");
                 e.printStackTrace();
             }
+        } else {
+            System.out.println("No file selected for export.");
         }
     }
 
@@ -202,6 +302,53 @@ public class MainWindow extends Application {
             e.printStackTrace();
             return "Help content could not be loaded.";
         }
+    }
+
+    private void showCreateArtifactDialog(Stage stage) {
+        Dialog<Artifact> dialog = new Dialog<>();
+        dialog.setTitle("Create New Artifact");
+        ButtonType createButtonType = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(createButtonType, ButtonType.CANCEL);
+
+        VBox vbox = new VBox(5);
+        TextField nameField = new TextField();
+        TextField categoryField = new TextField();
+        TextField civilizationField = new TextField();
+        TextField locationField = new TextField();
+        TextField compositionField = new TextField();
+        TextField dateField = new TextField();
+        TextField placeField = new TextField();
+
+        vbox.getChildren().addAll(
+                new Label("Artifact Name:"), nameField,
+                new Label("Category:"), categoryField,
+                new Label("Civilization:"), civilizationField,
+                new Label("Discovery Location:"), locationField,
+                new Label("Discovery Date:"), dateField,
+                new Label("Current Place:"), placeField,
+                new Label("Composition:"), compositionField
+        );
+
+        dialog.getDialogPane().setContent(vbox);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == createButtonType) {
+                Artifact newArtifact = new Artifact();
+                newArtifact.setArtifactName(nameField.getText().isEmpty() ? newArtifact.getArtifactName() : nameField.getText());
+                newArtifact.setCategory(categoryField.getText().isEmpty() ? newArtifact.getCategory() : categoryField.getText());
+                newArtifact.setCivilization(civilizationField.getText().isEmpty() ? newArtifact.getCivilization() : civilizationField.getText());
+                newArtifact.setDiscoveryLocation(locationField.getText().isEmpty() ? newArtifact.getDiscoveryLocation() : locationField.getText());
+                newArtifact.setDiscoveryDate(dateField.getText().isEmpty() ? newArtifact.getDiscoveryDate() : dateField.getText());
+                newArtifact.setCurrentPlace(placeField.getText().isEmpty() ? newArtifact.getCurrentPlace() : placeField.getText());
+                newArtifact.setComposition(compositionField.getText().isEmpty() ? newArtifact.getComposition() : compositionField.getText());
+                artifactList.add(newArtifact);
+                tableView.getItems().setAll(artifactList);
+                return newArtifact;
+            }
+            return null;
+        });
+
+        dialog.showAndWait();
     }
 
     public static void main(String[] args) {
