@@ -6,17 +6,17 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MainWindow extends Application {
 
@@ -24,59 +24,21 @@ public class MainWindow extends Application {
     private TableView<Artifact> tableView = new TableView<>();
     private TextArea helpTextArea = new TextArea();
 
+    private TextField nameFilter = new TextField();
+    private TextField categoryFilter = new TextField();
+    private TextField civilizationFilter = new TextField();
+    private TextField locationFilter = new TextField();
+    private TextField dateFilter = new TextField();
+    private TextField placeFilter = new TextField();
+    private TextField compositionFilter = new TextField();
+
     @Override
     public void start(Stage stage) {
         VBox vbox = new VBox();
-        HBox hbox = new HBox();
 
-        // Menü Bar
-        MenuBar menuBar = new MenuBar();
-        Menu mfile = new Menu("File");
-        Menu mhelp = new Menu("Help");
-        Menu mview = new Menu("View");
-        Menu mfunctions=new Menu("Operations");
+        MenuBar menuBar = createMenuBar(stage);
+        VBox filterPane = createFilterPane();
 
-        MenuItem addImportFileButton = new MenuItem("Import File");
-        MenuItem addExportFileButton = new MenuItem("Export File");
-        MenuItem viewHelpItem = new MenuItem("View Help");
-        MenuItem showTableItem = new MenuItem("Show Table");
-        MenuItem createArtifactItem=new MenuItem("Create Artifact");
-        MenuItem deleteArtifactItem = new MenuItem("Delete Artifact");
-        MenuItem editArtifactItem = new MenuItem("Edit Artifact");
-
-
-        mfile.getItems().addAll(addExportFileButton, addImportFileButton);
-        mhelp.getItems().add(viewHelpItem);  // Help menüsünde View Help butonu
-        mview.getItems().add(showTableItem);  // View menüsünde Show Table butonu
-
-        mfunctions.getItems().addAll(createArtifactItem, deleteArtifactItem, editArtifactItem); //Operations menüsünde Create Delete Edit butonları
-        menuBar.getMenus().addAll(mfile, mhelp, mview, mfunctions);
-
-        addImportFileButton.setOnAction(e -> importFile(stage));
-        addExportFileButton.setOnAction(e -> exportFile(stage));
-
-        editArtifactItem.setOnAction(e -> {
-            Artifact selected = tableView.getSelectionModel().getSelectedItem();
-            if (selected != null) {  //seçilen artifact üzerinden edit işlemi yapma
-                showEditArtifactDialog(selected); // artık MainWindow içindeki metodu çağırıyoruz
-            } else {
-                showAlert("Please select an artifact to edit.");
-            }
-        });
-
-        deleteArtifactItem.setOnAction(e -> {
-            Artifact selected = tableView.getSelectionModel().getSelectedItem();
-            if (selected != null) {  //seçilen artifact üzerinden delete işlemi yapma
-                artifactList.remove(selected);
-                reassignArtifactIDs(); // <== Burada yeni fonksiyonu çağırıyoruz
-                tableView.getItems().setAll(artifactList);
-            } else {
-                showAlert("Please select an artifact to delete.");
-            }
-        });
-
-
-        // Table Columns
         TableColumn<Artifact, Integer> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(data -> new SimpleObjectProperty<>(data.getValue().getArtifactId()));
 
@@ -101,97 +63,94 @@ public class MainWindow extends Application {
         tableView.getColumns().addAll(idCol, nameCol, categoryCol, civCol, locationCol, dateCol, placeCol);
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        // Help TextArea
         helpTextArea.setEditable(false);
         helpTextArea.setWrapText(true);
         helpTextArea.setVisible(false);
 
-        // StackPane to hold both the Table and Help TextArea
-        StackPane stackPane = new StackPane();
-        stackPane.getChildren().addAll(tableView, helpTextArea); // Both TableView and Help TextArea added here.
+        StackPane stackPane = new StackPane(tableView, helpTextArea);
 
-        // View Help butonuna tıklanınca Yardım metnini göster
-        viewHelpItem.setOnAction(e -> {
-            helpTextArea.setText(loadHelpText()); // Yardım metnini yükle
-            helpTextArea.setVisible(true);  // Yardım metnini göster
-            tableView.setVisible(false);    // Tabloyu gizle
-        });
+        HBox mainContent = new HBox();
+        mainContent.getChildren().addAll(stackPane, filterPane);
+        HBox.setHgrow(stackPane, Priority.ALWAYS);
 
-        // Show Table butonuna tıklanınca tabloyu göster
-        showTableItem.setOnAction(e -> {
-            tableView.setVisible(true);    // Tabloyu göster
-            helpTextArea.setVisible(false); // Yardım metnini gizle
-        });
+        vbox.getChildren().addAll(menuBar, mainContent);
 
-
-        createArtifactItem.setOnAction(e -> showCreateArtifactDialog(stage)); //yeni oluşturma işlemi için açılan diyalog paneli
-
-        vbox.getChildren().addAll(menuBar, stackPane); // StackPane'i VBox'a ekle
-
-        Scene scene = new Scene(vbox, 1000, 500);
+        Scene scene = new Scene(vbox, 1200, 600);
         stage.setTitle("Historical Artifact Catalog");
         stage.setScene(scene);
         stage.show();
     }
 
-    private void reassignArtifactIDs() {
-        for (int i = 0; i < artifactList.size(); i++) {
-            artifactList.get(i).setArtifactId(i + 1); // ID’ler 1’den başlasın
-        }
-    }
+    private MenuBar createMenuBar(Stage stage) {
+        MenuBar menuBar = new MenuBar();
+        Menu mfile = new Menu("File");
+        Menu mhelp = new Menu("Help");
+        Menu mview = new Menu("View");
+        Menu mfunctions = new Menu("Operations");
 
+        MenuItem importItem = new MenuItem("Import File");
+        MenuItem exportItem = new MenuItem("Export File");
+        MenuItem helpItem = new MenuItem("View Help");
+        MenuItem showTableItem = new MenuItem("Show Table");
 
-    private void showAlert(String message) {  //artifact seçilmediğinde kullanıcıya error mesajı verecek
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
+        mfile.getItems().addAll(exportItem, importItem);
+        mhelp.getItems().add(helpItem);
+        mview.getItems().add(showTableItem);
+        menuBar.getMenus().addAll(mfile, mhelp, mview, mfunctions);
 
-    private void showEditArtifactDialog(Artifact artifact) {
-        Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle("Edit Artifact");
+        importItem.setOnAction(e -> importFile(stage));
+        exportItem.setOnAction(e -> exportFile(stage));
 
-        ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-
-        TextField nameField = new TextField(artifact.getArtifactName());
-        TextField categoryField = new TextField(artifact.getCategory());
-        TextField civilizationField = new TextField(artifact.getCivilization());
-        TextField locationField = new TextField(artifact.getDiscoveryLocation());
-        TextField dateField = new TextField(artifact.getDiscoveryDate());
-        TextField placeField = new TextField(artifact.getCurrentPlace());
-
-        VBox vbox = new VBox(5);
-        vbox.getChildren().addAll(
-                new Label("Artifact Name:"), nameField,
-                new Label("Category:"), categoryField,
-                new Label("Civilization:"), civilizationField,
-                new Label("Discovery Location:"), locationField,
-                new Label("Discovery Date:"), dateField,
-                new Label("Current Place:"), placeField
-        );
-
-        dialog.getDialogPane().setContent(vbox);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == saveButtonType) {
-                artifact.setArtifactName(nameField.getText());
-                artifact.setCategory(categoryField.getText());
-                artifact.setCivilization(civilizationField.getText());
-                artifact.setDiscoveryLocation(locationField.getText());
-                artifact.setDiscoveryDate(dateField.getText());
-                artifact.setCurrentPlace(placeField.getText());
-
-                tableView.refresh(); // Tabloyu güncelle
-            }
-            return null;
+        helpItem.setOnAction(e -> {
+            helpTextArea.setText(loadHelpText());
+            helpTextArea.setVisible(true);
+            tableView.setVisible(false);
         });
 
-        dialog.showAndWait();
+        showTableItem.setOnAction(e -> {
+            tableView.setVisible(true);
+            helpTextArea.setVisible(false);
+        });
+
+        return menuBar;
     }
 
+
+    private VBox createFilterPane() {
+        VBox filters = new VBox(5);
+        nameFilter.setPromptText("Name");
+        categoryFilter.setPromptText("Category");
+        civilizationFilter.setPromptText("Civilization");
+        locationFilter.setPromptText("Location");
+        dateFilter.setPromptText("Date");
+        placeFilter.setPromptText("Place");
+        compositionFilter.setPromptText("Composition");
+
+        Button applyFiltersButton = new Button("Apply Filters");
+        applyFiltersButton.setOnAction(e -> applyFilters());
+
+        filters.getChildren().addAll(
+                new Label("Filters:"),
+                nameFilter, categoryFilter, civilizationFilter,
+                locationFilter, dateFilter, placeFilter,
+                compositionFilter, applyFiltersButton
+        );
+        filters.setPrefWidth(200);
+        return filters;
+    }
+
+    private void applyFilters() {
+        List<Artifact> filtered = artifactList.stream()
+                .filter(a -> a.getArtifactName().toLowerCase().contains(nameFilter.getText().toLowerCase()))
+                .filter(a -> a.getCategory().toLowerCase().contains(categoryFilter.getText().toLowerCase()))
+                .filter(a -> a.getCivilization().toLowerCase().contains(civilizationFilter.getText().toLowerCase()))
+                .filter(a -> a.getDiscoveryLocation().toLowerCase().contains(locationFilter.getText().toLowerCase()))
+                .filter(a -> a.getDiscoveryDate().toLowerCase().contains(dateFilter.getText().toLowerCase()))
+                .filter(a -> a.getCurrentPlace().toLowerCase().contains(placeFilter.getText().toLowerCase()))
+                .filter(a -> a.getComposition().toLowerCase().contains(compositionFilter.getText().toLowerCase()))
+                .collect(Collectors.toList());
+        tableView.getItems().setAll(filtered);
+    }
 
 
 
@@ -207,13 +166,9 @@ public class MainWindow extends Application {
                 ArtifactManager wrapper = mapper.readValue(selectedFile, ArtifactManager.class);
                 artifactList = wrapper.getArtifacts();
                 tableView.getItems().setAll(artifactList);
-                System.out.println("Imported " + artifactList.size() + " artifacts.");
             } catch (IOException e) {
-                System.out.println("Failed to read JSON file.");
                 e.printStackTrace();
             }
-        } else {
-            System.out.println("No file selected.");
         }
     }
 
@@ -230,13 +185,9 @@ public class MainWindow extends Application {
 
             try {
                 mapper.writerWithDefaultPrettyPrinter().writeValue(fileToSave, wrapper);
-                System.out.println("Exported " + artifactList.size() + " artifacts to: " + fileToSave.getAbsolutePath());
             } catch (IOException e) {
-                System.out.println("Error while saving the file.");
                 e.printStackTrace();
             }
-        } else {
-            System.out.println("No file selected for export.");
         }
     }
 
@@ -250,50 +201,6 @@ public class MainWindow extends Application {
             e.printStackTrace();
             return "Help content could not be loaded.";
         }
-    }
-
-    //Yeni artifact eklemek için açılan bilgileri yazma diyalog düzeni
-    private void showCreateArtifactDialog(Stage stage){
-        Dialog<Artifact> dialog = new Dialog<>();
-        dialog.setTitle("Create New Artifact");
-        ButtonType createButtonType = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);//işlemi bitirmek için CREATE butonu
-        dialog.getDialogPane().getButtonTypes().addAll(createButtonType, ButtonType.CANCEL);//işlemi iptal etmek için CANCEL butonu
-
-        VBox vbox=new VBox(5);
-        TextField nameField = new TextField();
-        TextField categoryField = new TextField();
-        TextField civilizationField = new TextField();
-        TextField locationField = new TextField();
-        TextField dateField = new TextField();
-        TextField placeField = new TextField();
-
-        vbox.getChildren().addAll(
-                new Label("Artifact Name:"),nameField,
-                new Label("Category:"),categoryField,
-                new Label("Civilization:"),civilizationField,
-                new Label("Discovery Location:"),locationField,
-                new Label("Discovery Date:"),dateField,
-                new Label("Current Place:"),placeField
-        );
-        dialog.getDialogPane().setContent(vbox);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton==createButtonType){
-                Artifact newArtifact=new Artifact();
-                newArtifact.setArtifactName(nameField.getText().isEmpty() ? newArtifact.getArtifactName() : nameField.getText());
-                newArtifact.setCategory(categoryField.getText().isEmpty() ? newArtifact.getCategory() : categoryField.getText());
-                newArtifact.setCivilization(civilizationField.getText().isEmpty() ? newArtifact.getCivilization() : civilizationField.getText());
-                newArtifact.setDiscoveryLocation(locationField.getText().isEmpty() ? newArtifact.getDiscoveryLocation() : locationField.getText());
-                newArtifact.setDiscoveryDate(dateField.getText().isEmpty() ? newArtifact.getDiscoveryDate() : dateField.getText());
-                newArtifact.setCurrentPlace(placeField.getText().isEmpty() ? newArtifact.getCurrentPlace() : placeField.getText());
-
-                artifactList.add(newArtifact);
-                tableView.getItems().setAll(artifactList);  //eklenen artifact sonrası liste güncelleniyor
-                return newArtifact;
-            }
-            return null;
-        });
-        dialog.showAndWait();
     }
 
     public static void main(String[] args) {
