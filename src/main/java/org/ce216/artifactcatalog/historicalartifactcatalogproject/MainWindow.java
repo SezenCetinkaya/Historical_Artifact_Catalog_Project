@@ -88,6 +88,7 @@ public class MainWindow extends Application {
         Menu mview = new Menu("View");
         Menu mfunctions = new Menu("Operations");
 
+
         MenuItem importItem = new MenuItem("Import File");
         MenuItem exportItem = new MenuItem("Export File");
         MenuItem helpItem = new MenuItem("View Help");
