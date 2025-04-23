@@ -1,22 +1,23 @@
 package org.ce216.artifactcatalog.historicalartifactcatalogproject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import javafx.application.Application;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,7 +27,7 @@ public class MainWindow extends Application {
     private List<Artifact> artifactList = new ArrayList<>();
     private TableView<Artifact> tableView = new TableView<>();
     private TextArea helpTextArea = new TextArea();
-
+    private TextField idFilter = new TextField();
     private TextField nameFilter = new TextField();
     private TextField categoryFilter = new TextField();
     private TextField civilizationFilter = new TextField();
@@ -34,6 +35,21 @@ public class MainWindow extends Application {
     private TextField dateFilter = new TextField();
     private TextField placeFilter = new TextField();
     private TextField compositionFilter = new TextField();
+    private ListView<String> categoryListView = new ListView<>();
+    private ListView<String> civListView = new ListView<>();
+    private VBox categoryCheckBoxVBox = new VBox();
+    private VBox civCheckBoxVBox = new VBox();
+    DatePicker startDateFilter = new DatePicker();
+    DatePicker endDateFilter = new DatePicker();
+    DatePicker datePicker =new DatePicker();
+    Label selectedIdLabel = new Label("ID: All");
+    Label selectedNameLabel = new Label("Name: All");
+    Label selectedCategoryLabel = new Label("Category: All");
+    Label selectedCivLabel = new Label("Civilization: All");
+    Label selectedLocationLabel = new Label("Location: All");
+    Label selectedDateLabel = new Label("Date: All");
+    Label selectedCurrentPlaceLabel = new Label("Current Place: All");
+    Label selectedCompositionLabel = new Label("Composition: All");
 
     @Override
     public void start(Stage stage) {
@@ -45,6 +61,7 @@ public class MainWindow extends Application {
         Menu mhelp = new Menu("Help");
         Menu mview = new Menu("View");
         Menu mfunctions = new Menu("Operations");
+        Menu mFilter = new Menu("Filter");
 
         MenuItem addImportFileButton = new MenuItem("Import File");
         MenuItem addExportFileButton = new MenuItem("Export File");
@@ -53,21 +70,24 @@ public class MainWindow extends Application {
         MenuItem createArtifactItem = new MenuItem("Create Artifact");
         MenuItem editArtifactItem = new MenuItem("Edit Artifact");
         MenuItem deleteArtifactItem = new MenuItem("Delete Artifact");
+        MenuItem filterItem = new MenuItem("Filter");
 
         mfile.getItems().addAll(addExportFileButton, addImportFileButton);
         mhelp.getItems().add(viewHelpItem);
         mview.getItems().add(showTableItem);
         mfunctions.getItems().addAll(createArtifactItem, editArtifactItem, deleteArtifactItem);
-        menuBar.getMenus().addAll(mfile, mhelp, mview, mfunctions);
-
-
+        mFilter.getItems().addAll(filterItem);
+        menuBar.getMenus().addAll(mfile, mhelp, mview, mfunctions, mFilter);
 
         // Import/Export actions
         addImportFileButton.setOnAction(e -> importFile(stage));
         addExportFileButton.setOnAction(e -> exportFile(stage));
 
-
+        //Filter area
         VBox filterPane = createFilterPane();
+
+        filterPane.setVisible(false);
+        filterPane.setManaged(false);
 
         editArtifactItem.setOnAction(e -> {
             Artifact selected = tableView.getSelectionModel().getSelectedItem();
@@ -82,7 +102,8 @@ public class MainWindow extends Application {
             Artifact selected = tableView.getSelectionModel().getSelectedItem();
             if (selected != null) {
                 artifactList.remove(selected);
-                reassignArtifactIds();
+                reassignArtifactIDs();
+                updateFilters();
                 tableView.getItems().setAll(artifactList);
             } else {
                 showAlert("Please select an artifact to delete.");
@@ -106,12 +127,21 @@ public class MainWindow extends Application {
         locationCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getDiscoveryLocation()));
 
         TableColumn<Artifact, String> dateCol = new TableColumn<>("Discovery Date");
-        dateCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getDiscoveryDate()));
+        dateCol.setCellValueFactory(data -> {
+            LocalDate discoveryDate = data.getValue().getDiscoveryDate();
+            if (discoveryDate == null) {
+                return new SimpleStringProperty("unknown"); // Tarih yoksa "unknown" göster
+            }
+            return new SimpleStringProperty(discoveryDate.toString()); // Tarih varsa, "yyyy-MM-dd" formatında göster
+        });
 
         TableColumn<Artifact, String> placeCol = new TableColumn<>("Current Place");
         placeCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCurrentPlace()));
 
-        tableView.getColumns().addAll(idCol, nameCol, categoryCol, civCol, locationCol, dateCol, placeCol);
+        TableColumn<Artifact, String> compositionCol = new TableColumn<>("Composition");
+        compositionCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getComposition()));
+
+        tableView.getColumns().addAll(idCol, nameCol, categoryCol, civCol, locationCol, dateCol, placeCol, compositionCol);
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         // Help area
@@ -133,18 +163,40 @@ public class MainWindow extends Application {
             helpTextArea.setVisible(false);
         });
 
-
+        filterItem.setOnAction(e -> {
+            if (filterPane.isVisible()) {
+                filterPane.setVisible(false); // Hide the filter box
+                filterPane.setManaged(false);
+            } else {
+                filterPane.setVisible(true);  // Görünür hale getir
+                filterPane.setManaged(true);  // Alan kaplamasına izin ver
+            }
+        });
 
         HBox mainContent = new HBox();
-        mainContent.getChildren().addAll(stackPane, filterPane);
+        mainContent.getChildren().addAll(vbox, filterPane);
         HBox.setHgrow(stackPane, Priority.ALWAYS);
 
         createArtifactItem.setOnAction(e -> showCreateArtifactDialog(stage));
 
-        vbox.getChildren().addAll(menuBar, mainContent, stackPane);
+        vbox.getChildren().addAll(menuBar, stackPane);
 
+        VBox.setVgrow(stackPane, Priority.ALWAYS);
+        vbox.setMaxWidth(Double.MAX_VALUE);
+        vbox.setMaxHeight(Double.MAX_VALUE);
 
-        Scene scene = new Scene(vbox, 1200, 600);
+        tableView.setMaxWidth(Double.MAX_VALUE);
+        tableView.setMaxHeight(Double.MAX_VALUE);
+
+        // StackPane ayarları
+        stackPane.setMaxWidth(Double.MAX_VALUE);
+        stackPane.setMaxHeight(Double.MAX_VALUE);
+
+        // Main layout da genişleyebilsin
+        mainContent.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(vbox, Priority.ALWAYS);
+
+        Scene scene = new Scene(mainContent, 1200, 600);
         stage.setTitle("Historical Artifact Catalog");
         stage.setScene(scene);
         stage.show();
@@ -155,8 +207,6 @@ public class MainWindow extends Application {
             artifactList.get(i).setArtifactId(i + 1);
         }
     }
-
-
 
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -177,9 +227,14 @@ public class MainWindow extends Application {
         TextField categoryField = new TextField(artifact.getCategory());
         TextField civilizationField = new TextField(artifact.getCivilization());
         TextField locationField = new TextField(artifact.getDiscoveryLocation());
-        TextField dateField = new TextField(artifact.getDiscoveryDate());
         TextField placeField = new TextField(artifact.getCurrentPlace());
         TextField compositionField = new TextField(artifact.getComposition());
+
+        // Tarih alanı artık DatePicker
+        DatePicker datePicker = new DatePicker();
+        if (artifact.getDiscoveryDate() != null) {
+            datePicker.setValue(artifact.getDiscoveryDate());
+        }
 
         VBox vbox = new VBox(5);
         vbox.getChildren().addAll(
@@ -187,7 +242,7 @@ public class MainWindow extends Application {
                 new Label("Category:"), categoryField,
                 new Label("Civilization:"), civilizationField,
                 new Label("Discovery Location:"), locationField,
-                new Label("Discovery Date:"), dateField,
+                new Label("Discovery Date:"), datePicker,
                 new Label("Current Place:"), placeField,
                 new Label("Composition:"), compositionField
         );
@@ -200,10 +255,14 @@ public class MainWindow extends Application {
                 artifact.setCategory(categoryField.getText());
                 artifact.setCivilization(civilizationField.getText());
                 artifact.setDiscoveryLocation(locationField.getText());
-                artifact.setDiscoveryDate(dateField.getText());
                 artifact.setCurrentPlace(placeField.getText());
+
+                // DatePicker'dan alınan tarihi doğrudan kullanabiliriz
+                LocalDate selectedDate = datePicker.getValue();
+                artifact.setDiscoveryDate(selectedDate);
                 artifact.setComposition(compositionField.getText());
-                tableView.refresh();
+                updateFilters();
+                tableView.refresh(); // Tabloyu güncelle
             }
             return null;
         });
@@ -213,38 +272,323 @@ public class MainWindow extends Application {
 
     private VBox createFilterPane() {
         VBox filters = new VBox(5);
+        idFilter.setPromptText("ID");
         nameFilter.setPromptText("Name");
-        categoryFilter.setPromptText("Category");
-        civilizationFilter.setPromptText("Civilization");
+        categoryListView = new ListView<>();
+        categoryListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        categoryListView.setMaxHeight(100);
+        civListView = new ListView<>();
+        civListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        civListView.setMaxHeight(100);
         locationFilter.setPromptText("Location");
         dateFilter.setPromptText("Date");
+        startDateFilter.setPromptText("Start Date");
+        endDateFilter.setPromptText("End Date");
         placeFilter.setPromptText("Place");
         compositionFilter.setPromptText("Composition");
 
+        categoryListView.getItems().setAll(
+                artifactList.stream().map(Artifact::getCategory).distinct().collect(Collectors.toList())
+        );
+        civListView.getItems().setAll(
+                artifactList.stream().map(Artifact::getCivilization).distinct().collect(Collectors.toList())
+        );
+
+        // For Category Filter
+        categoryCheckBoxVBox.setSpacing(5);
+        categoryCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
+
+        // Populate category checkboxes
+        categoryListView.getItems().stream()
+                .map(category -> new CheckBox(category))
+                .forEach(categoryCheckBoxVBox.getChildren()::add);
+
+        // For Civilization Filter
+        civCheckBoxVBox.setSpacing(5);
+        civCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
+
+        VBox categoryFilterBox = new VBox(10, new Label("Categories"), categoryCheckBoxVBox);
+        VBox civFilterBox = new VBox(10, new Label("Civilizations"), civCheckBoxVBox);
+
+        // Populate civilization checkboxes
+        civListView.getItems().stream()
+                .map(civ -> new CheckBox(civ))
+                .forEach(civCheckBoxVBox.getChildren()::add);
+
+        categoryListView.setMaxWidth(Double.MAX_VALUE);
+        civListView.setMaxWidth(Double.MAX_VALUE);
+
         Button applyFiltersButton = new Button("Apply Filters");
-        applyFiltersButton.setOnAction(e -> applyFilters());
+        Button clearFiltersButton = new Button("Clear Filters");
+
+        HBox buttons = new HBox(8);
+        buttons.getChildren().addAll(applyFiltersButton,clearFiltersButton);
+
+        //Selected Filters Box
+        VBox selectedFiltersBox = new VBox(8);
+        selectedFiltersBox.setPadding(new Insets(10));
+        selectedFiltersBox.setStyle("""
+                -fx-background-color: #f9f9f9;
+                -fx-border-color: #cccccc;
+                -fx-background-radius: 10;
+            """);
+
+        Label selectedFiltersLabel = new Label("Selected Filters");
+        selectedFiltersLabel.setStyle("""
+        -fx-font-size: 16px;
+        -fx-font-weight: bold;
+        -fx-font-style: italic;
+    """);
+
+        selectedIdLabel.setText("ID: All");
+        selectedNameLabel.setText("Name: All");
+        selectedCategoryLabel.setText("Category: All");
+        selectedCivLabel.setText("Civilization: All");
+        selectedLocationLabel.setText("Location: All");
+        selectedDateLabel.setText("Date: All");
+        selectedCurrentPlaceLabel.setText("Current Place: All");
+        selectedCompositionLabel.setText("Composition: All");
+
+        selectedFiltersBox.getChildren().addAll(
+                selectedFiltersLabel,
+                selectedIdLabel,
+                selectedNameLabel,
+                selectedCategoryLabel,
+                selectedCivLabel,
+                selectedLocationLabel,
+                selectedDateLabel,
+                selectedCurrentPlaceLabel,
+                selectedCompositionLabel
+        );
+
+        // Hide Selected Filters Box
+        selectedFiltersBox.setVisible(false);
+        selectedFiltersBox.setManaged(false);
+
+        //Close Button
+        Button closeButton = new Button("X");
+        closeButton.setStyle(
+                "-fx-font-size: 14px;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-background-color: transparent;" +
+                        "-fx-border-color: transparent;" +
+                        "-fx-text-fill: black;"
+        );
+
+        Label filtersLabel = new Label("Filters: ");
+        filtersLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+        BorderPane headerPane = new BorderPane();
+        headerPane.setLeft(filtersLabel);
+        headerPane.setRight(closeButton);
+        BorderPane.setAlignment(filtersLabel, Pos.CENTER_LEFT);
+        BorderPane.setAlignment(closeButton, Pos.CENTER_RIGHT);
+
+        ScrollPane filterScrollPane = new ScrollPane(filters);
+
+        VBox filterPanel = new VBox(headerPane,selectedFiltersBox, filterScrollPane );
+        filterScrollPane.setFitToHeight(true);
+        filterScrollPane.setFitToWidth(true);
+
+        applyFiltersButton.setOnAction(e -> {
+            String selectedId = idFilter.getText();
+            String selectedName = nameFilter.getText();
+
+            // Get selected categories and civilizations
+            List<String> selectedCategories = categoryCheckBoxVBox.getChildren().stream()
+                    .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
+                    .map(node -> ((CheckBox) node).getText())
+                    .collect(Collectors.toList());
+
+            List<String> selectedCivs = civCheckBoxVBox.getChildren().stream()
+                    .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
+                    .map(node -> ((CheckBox) node).getText())
+                    .collect(Collectors.toList());
+
+            String selectedLocation = locationFilter.getText();
+            LocalDate selectedStartDate = startDateFilter.getValue();
+            LocalDate selectedEndDate = endDateFilter.getValue();
+            String selectedCurrentPlace = placeFilter.getText();
+            String selectedComposition = compositionFilter.getText();
+
+            // Pass the selected categories and civilizations to the filter method
+            applyFilters(
+                    selectedId, selectedName, selectedCategories, selectedCivs,
+                    selectedLocation, selectedStartDate, selectedEndDate,
+                    selectedCurrentPlace, selectedComposition,
+                    selectedIdLabel, selectedNameLabel, selectedCategoryLabel,
+                    selectedCivLabel, selectedLocationLabel, selectedDateLabel,
+                    selectedCurrentPlaceLabel, selectedCompositionLabel
+            );
+
+            // Eğer en az bir filtre seçildiyse Selected Filters kutusunu göster
+            boolean isFilterApplied = !selectedId.isEmpty() || !selectedName.isEmpty() ||
+                    !selectedCategories.isEmpty() || !selectedCivs.isEmpty() ||
+                    !selectedLocation.isEmpty() || selectedStartDate != null || selectedEndDate != null ||
+                    !selectedCurrentPlace.isEmpty() || !selectedComposition.isEmpty();
+
+            // Eğer filtreler uygulanmışsa kutuyu göster, yoksa gizle
+            if (isFilterApplied) {
+                selectedFiltersBox.setVisible(true);
+                selectedFiltersBox.setManaged(true);
+            } else {
+                selectedFiltersBox.setVisible(false);
+                selectedFiltersBox.setManaged(false);
+            }
+        });
+
+        closeButton.setOnAction(e -> {
+            filterPanel.setVisible(false);
+            filterPanel.setManaged(false);
+        });
+
+        clearFiltersButton.setOnAction(e -> {
+            idFilter.clear();
+            nameFilter.clear();
+            categoryListView.getSelectionModel().clearSelection();
+            civListView.getSelectionModel().clearSelection();
+            locationFilter.clear();
+            startDateFilter.setValue(null);
+            endDateFilter.setValue(null);
+            placeFilter.clear();
+            compositionFilter.clear();
+
+            tableView.getItems().setAll(artifactList);
+        });
 
         filters.getChildren().addAll(
-                new Label("Filters:"),
-                nameFilter, categoryFilter, civilizationFilter,
-                locationFilter, dateFilter, placeFilter,
-                compositionFilter, applyFiltersButton
+                idFilter,nameFilter, categoryFilterBox, civFilterBox,
+                locationFilter,  startDateFilter, endDateFilter, placeFilter,
+                compositionFilter, buttons
         );
+
         filters.setPrefWidth(200);
-        return filters;
+        return filterPanel;
     }
 
-    private void applyFilters() {
+    private void applyFilters(
+            String selectedId, String selectedName, List<String> selectedCategories, List<String> selectedCivs,
+            String selectedLocation, LocalDate selectedStartDate, LocalDate selectedEndDate,
+            String selectedCurrentPlace, String selectedComposition,
+            Label selectedIdLabel, Label selectedNameLabel, Label selectedCategoryLabel,
+            Label selectedCivLabel, Label selectedLocationLabel, Label selectedDateLabel,
+            Label selectedCurrentPlaceLabel, Label selectedCompositionLabel
+    ){
         List<Artifact> filtered = artifactList.stream()
+                .filter(a -> selectedId.isEmpty() || String.valueOf(a.getArtifactId()).equals(selectedId))
                 .filter(a -> a.getArtifactName().toLowerCase().contains(nameFilter.getText().toLowerCase()))
-                .filter(a -> a.getCategory().toLowerCase().contains(categoryFilter.getText().toLowerCase()))
-                .filter(a -> a.getCivilization().toLowerCase().contains(civilizationFilter.getText().toLowerCase()))
+                .filter(a -> selectedCategories.isEmpty() || selectedCategories.contains(a.getCategory()))
+                .filter(a -> selectedCivs.isEmpty() || selectedCivs.contains(a.getCivilization()))
                 .filter(a -> a.getDiscoveryLocation().toLowerCase().contains(locationFilter.getText().toLowerCase()))
-                .filter(a -> a.getDiscoveryDate().toLowerCase().contains(dateFilter.getText().toLowerCase()))
+                .filter(a -> {
+                    try {
+                        LocalDate discoveryDate = a.getDiscoveryDate();
+                        if (selectedStartDate != null && selectedEndDate != null) {
+                            return !discoveryDate.isBefore(selectedStartDate) && !discoveryDate.isAfter(selectedEndDate);
+                        } else if (selectedStartDate != null) {
+                            return !discoveryDate.isBefore(selectedStartDate);
+                        } else if (selectedEndDate != null) {
+                            return !discoveryDate.isAfter(selectedEndDate);
+                        } else {
+                            return true;
+                        }
+                    } catch (Exception ex) {
+                        return false;
+                    }
+                })
                 .filter(a -> a.getCurrentPlace().toLowerCase().contains(placeFilter.getText().toLowerCase()))
                 .filter(a -> a.getComposition().toLowerCase().contains(compositionFilter.getText().toLowerCase()))
                 .collect(Collectors.toList());
+
         tableView.getItems().setAll(filtered);
+        tableView.refresh();
+        // ID
+        if (!selectedId.isEmpty()) {
+            selectedIdLabel.setText("ID: " + selectedId);
+            selectedIdLabel.setVisible(true);
+            selectedIdLabel.setManaged(true);
+        } else {
+            selectedIdLabel.setVisible(false);
+            selectedIdLabel.setManaged(false);
+        }
+
+        // Name
+        if (!selectedName.isEmpty()) {
+            selectedNameLabel.setText("Name: " + selectedName);
+            selectedNameLabel.setVisible(true);
+            selectedNameLabel.setManaged(true);
+        } else {
+            selectedNameLabel.setVisible(false);
+            selectedNameLabel.setManaged(false);
+        }
+
+        // Category
+        if (!selectedCategories.isEmpty()) {
+            selectedCategoryLabel.setText("Category: " + String.join(", ", selectedCategories));
+            selectedCategoryLabel.setVisible(true);
+            selectedCategoryLabel.setManaged(true);
+        } else {
+            selectedCategoryLabel.setVisible(false);
+            selectedCategoryLabel.setManaged(false);
+        }
+
+        // Civ
+        if (!selectedCivs.isEmpty()) {
+            selectedCivLabel.setText("Civilization: " + String.join(", ", selectedCivs));
+            selectedCivLabel.setVisible(true);
+            selectedCivLabel.setManaged(true);
+        } else {
+            selectedCivLabel.setVisible(false);
+            selectedCivLabel.setManaged(false);
+        }
+
+        // Location
+        if (!selectedLocation.isEmpty()) {
+            selectedLocationLabel.setText("Location: " + selectedLocation);
+            selectedLocationLabel.setVisible(true);
+            selectedLocationLabel.setManaged(true);
+        } else {
+            selectedLocationLabel.setVisible(false);
+            selectedLocationLabel.setManaged(false);
+        }
+
+        // Date
+        if (selectedStartDate != null || selectedEndDate != null) {
+            String dateRange = "";
+            if (selectedStartDate != null && selectedEndDate != null) {
+                dateRange = selectedStartDate + " - " + selectedEndDate;
+            } else if (selectedStartDate != null) {
+                dateRange = "From: " + selectedStartDate;
+            } else {
+                dateRange = "Until: " + selectedEndDate;
+            }
+            selectedDateLabel.setText("Date: " + dateRange);
+            selectedDateLabel.setVisible(true);
+            selectedDateLabel.setManaged(true);
+        } else {
+            selectedDateLabel.setVisible(false);
+            selectedDateLabel.setManaged(false);
+        }
+
+        // Current Place
+        if (!selectedCurrentPlace.isEmpty()) {
+            selectedCurrentPlaceLabel.setText("Current Place: " + selectedCurrentPlace);
+            selectedCurrentPlaceLabel.setVisible(true);
+            selectedCurrentPlaceLabel.setManaged(true);
+        } else {
+            selectedCurrentPlaceLabel.setVisible(false);
+            selectedCurrentPlaceLabel.setManaged(false);
+        }
+
+        // Composition
+        if (!selectedComposition.isEmpty()) {
+            selectedCompositionLabel.setText("Composition: " + selectedComposition);
+            selectedCompositionLabel.setVisible(true);
+            selectedCompositionLabel.setManaged(true);
+        } else {
+            selectedCompositionLabel.setVisible(false);
+            selectedCompositionLabel.setManaged(false);
+        }
     }
 
     private void importFile(Stage stage) {
@@ -255,11 +599,19 @@ public class MainWindow extends Application {
 
         if (selectedFile != null) {
             ObjectMapper mapper = new ObjectMapper();
+
+            mapper.registerModule(new JavaTimeModule());
+            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
             try {
                 ArtifactManager wrapper = mapper.readValue(selectedFile, ArtifactManager.class);
                 artifactList = wrapper.getArtifacts();
                 tableView.getItems().setAll(artifactList);
                 System.out.println("Imported " + artifactList.size() + " artifacts.");
+
+                // Update the category and civilization ListView and CheckBoxes after import
+                updateFilters();
+
             } catch (IOException e) {
                 System.out.println("Failed to read JSON file.");
                 e.printStackTrace();
@@ -316,7 +668,7 @@ public class MainWindow extends Application {
         TextField civilizationField = new TextField();
         TextField locationField = new TextField();
         TextField compositionField = new TextField();
-        TextField dateField = new TextField();
+        DatePicker datePicker = new DatePicker();
         TextField placeField = new TextField();
 
         vbox.getChildren().addAll(
@@ -324,7 +676,7 @@ public class MainWindow extends Application {
                 new Label("Category:"), categoryField,
                 new Label("Civilization:"), civilizationField,
                 new Label("Discovery Location:"), locationField,
-                new Label("Discovery Date:"), dateField,
+                new Label("Discovery Date:"), datePicker,
                 new Label("Current Place:"), placeField,
                 new Label("Composition:"), compositionField
         );
@@ -338,10 +690,11 @@ public class MainWindow extends Application {
                 newArtifact.setCategory(categoryField.getText().isEmpty() ? newArtifact.getCategory() : categoryField.getText());
                 newArtifact.setCivilization(civilizationField.getText().isEmpty() ? newArtifact.getCivilization() : civilizationField.getText());
                 newArtifact.setDiscoveryLocation(locationField.getText().isEmpty() ? newArtifact.getDiscoveryLocation() : locationField.getText());
-                newArtifact.setDiscoveryDate(dateField.getText().isEmpty() ? newArtifact.getDiscoveryDate() : dateField.getText());
+                newArtifact.setDiscoveryDate(datePicker.getValue() != null ? datePicker.getValue() : newArtifact.getDiscoveryDate());
                 newArtifact.setCurrentPlace(placeField.getText().isEmpty() ? newArtifact.getCurrentPlace() : placeField.getText());
                 newArtifact.setComposition(compositionField.getText().isEmpty() ? newArtifact.getComposition() : compositionField.getText());
                 artifactList.add(newArtifact);
+                updateFilters();
                 tableView.getItems().setAll(artifactList);
                 return newArtifact;
             }
@@ -349,6 +702,35 @@ public class MainWindow extends Application {
         });
 
         dialog.showAndWait();
+    }
+    private void updateFilters() {
+        // Update the category list in ListView
+        categoryListView.getItems().setAll(
+                artifactList.stream().map(Artifact::getCategory).distinct().collect(Collectors.toList())
+        );
+
+        // Update the civilization list in ListView
+        civListView.getItems().setAll(
+                artifactList.stream().map(Artifact::getCivilization).distinct().collect(Collectors.toList())
+        );
+
+        // Clear and repopulate the CheckBoxes in categoryCheckBoxVBox
+        categoryCheckBoxVBox.getChildren().clear();
+        categoryListView.getItems().stream()
+                .map(category -> new CheckBox(category))
+                .forEach(categoryCheckBoxVBox.getChildren()::add);
+
+        // Clear and repopulate the CheckBoxes in civCheckBoxVBox
+        civCheckBoxVBox.getChildren().clear();
+        civListView.getItems().stream()
+                .map(civ -> new CheckBox(civ))
+                .forEach(civCheckBoxVBox.getChildren()::add);
+    }
+
+    private void reassignArtifactIDs() {
+        for (int i = 0; i < artifactList.size(); i++) {
+            artifactList.get(i).setArtifactId(i + 1); // ID’ler 1’den başlasın
+        }
     }
 
     public static void main(String[] args) {

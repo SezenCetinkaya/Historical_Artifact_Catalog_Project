@@ -1,5 +1,6 @@
 package org.ce216.artifactcatalog.historicalartifactcatalogproject;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class Artifact {
@@ -10,7 +11,7 @@ public class Artifact {
     private String civilization;
     private String discoveryLocation;
     private String composition;
-    private String discoveryDate;
+    private LocalDate discoveryDate;
     private String currentPlace;
     private double width, length, height, weight;
     private List<String> tags;
@@ -23,13 +24,13 @@ public class Artifact {
         this.civilization = "Unknown";
         this.discoveryLocation = "Unknown";
         this.composition = "Unknown";
-        this.discoveryDate = "Unknown";
+        this.discoveryDate = null;
         this.currentPlace = "Unknown";
     }
 
 
     public Artifact(int artifactId, String artifactName, String category, String civilization,
-                    String discoveryLocation, String composition, String discoveryDate, String currentPlace,
+                    String discoveryLocation, String composition, LocalDate discoveryDate, String currentPlace,
                     double width, double length, double height, double weight, List<String> tags) {
         this.artifactId = artifactId;
         this.artifactName = artifactName;
@@ -93,11 +94,11 @@ public class Artifact {
         this.composition = composition;
     }
 
-    public String getDiscoveryDate() {
+    public LocalDate getDiscoveryDate() {
         return discoveryDate;
     }
 
-    public void setDiscoveryDate(String discoveryDate) {
+    public void setDiscoveryDate(LocalDate discoveryDate) {
         this.discoveryDate = discoveryDate;
     }
 
