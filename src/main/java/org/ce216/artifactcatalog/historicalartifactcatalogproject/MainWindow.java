@@ -453,7 +453,35 @@ public class MainWindow extends Application {
             placeFilter.clear();
             compositionFilter.clear();
 
+            // CheckBox'ların seçimini temizle
+            categoryCheckBoxVBox.getChildren().forEach(node -> {
+                if (node instanceof CheckBox) {
+                    ((CheckBox) node).setSelected(false);
+                }
+            });
+            civCheckBoxVBox.getChildren().forEach(node -> {
+                if (node instanceof CheckBox) {
+                    ((CheckBox) node).setSelected(false);
+                }
+            });
+
+            // Tüm artifactleri geri yükle
             tableView.getItems().setAll(artifactList);
+            tableView.refresh();
+
+            // Selected Filters kutusunu gizle
+            selectedFiltersBox.setVisible(false);
+            selectedFiltersBox.setManaged(false);
+
+            // Selected Filter Label'larını "All" yap gereksiz ama lazım olabilir
+            selectedIdLabel.setText("ID: All");
+            selectedNameLabel.setText("Name: All");
+            selectedCategoryLabel.setText("Category: All");
+            selectedCivLabel.setText("Civilization: All");
+            selectedLocationLabel.setText("Location: All");
+            selectedDateLabel.setText("Date: All");
+            selectedCurrentPlaceLabel.setText("Current Place: All");
+            selectedCompositionLabel.setText("Composition: All");
         });
 
         filters.getChildren().addAll(
