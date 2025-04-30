@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: org.ce216.artifactcatalog.historicalartifactcatalogproject.H
+ elloApplication
+

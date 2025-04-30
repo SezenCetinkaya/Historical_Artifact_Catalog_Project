@@ -657,11 +657,17 @@ public class MainWindow extends Application {
 
         if (fileToSave != null) {
             ObjectMapper mapper = new ObjectMapper();
+
+            // Java'nın local datei okuması için:
+            mapper.registerModule(new JavaTimeModule());
+            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+
             ArtifactManager wrapper = new ArtifactManager();
-            wrapper.setArtifacts(artifactList);
+            wrapper.setArtifacts(artifactList); // artifactList alınıyor
 
             try {
-                mapper.writerWithDefaultPrettyPrinter().writeValue(fileToSave, wrapper);
+                mapper.writeValue(fileToSave, wrapper);
                 System.out.println("Exported " + artifactList.size() + " artifacts to: " + fileToSave.getAbsolutePath());
             } catch (IOException e) {
                 System.out.println("Error while saving the file.");
@@ -671,6 +677,7 @@ public class MainWindow extends Application {
             System.out.println("No file selected for export.");
         }
     }
+
 
     private String loadHelpText() {
         try (InputStream inputStream = getClass().getResourceAsStream("/Help.txt")) {
