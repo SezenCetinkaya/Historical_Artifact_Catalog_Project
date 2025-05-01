@@ -37,8 +37,10 @@ public class MainWindow extends Application {
     private TextField compositionFilter = new TextField();
     private ListView<String> categoryListView = new ListView<>();
     private ListView<String> civListView = new ListView<>();
+    private ListView<String> tagListView = new ListView<>();
     private VBox categoryCheckBoxVBox = new VBox();
     private VBox civCheckBoxVBox = new VBox();
+    private VBox tagCheckBoxVBox = new VBox();
     DatePicker startDateFilter = new DatePicker();
     DatePicker endDateFilter = new DatePicker();
     DatePicker datePicker =new DatePicker();
@@ -46,6 +48,7 @@ public class MainWindow extends Application {
     Label selectedNameLabel = new Label("Name: All");
     Label selectedCategoryLabel = new Label("Category: All");
     Label selectedCivLabel = new Label("Civilization: All");
+    Label selectedTagLabel = new Label("Tags: All");
     Label selectedLocationLabel = new Label("Location: All");
     Label selectedDateLabel = new Label("Date: All");
     Label selectedCurrentPlaceLabel = new Label("Current Place: All");
@@ -293,7 +296,6 @@ public class MainWindow extends Application {
         civListView.getItems().setAll(
                 artifactList.stream().map(Artifact::getCivilization).distinct().collect(Collectors.toList())
         );
-
         // For Category Filter
         categoryCheckBoxVBox.setSpacing(5);
         categoryCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
@@ -303,20 +305,37 @@ public class MainWindow extends Application {
                 .map(category -> new CheckBox(category))
                 .forEach(categoryCheckBoxVBox.getChildren()::add);
 
+        categoryListView.setMaxWidth(Double.MAX_VALUE);
+        VBox categoryFilterBox = new VBox(10, new Label("Categories"), categoryCheckBoxVBox);
+
         // For Civilization Filter
         civCheckBoxVBox.setSpacing(5);
         civCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
-
-        VBox categoryFilterBox = new VBox(10, new Label("Categories"), categoryCheckBoxVBox);
-        VBox civFilterBox = new VBox(10, new Label("Civilizations"), civCheckBoxVBox);
 
         // Populate civilization checkboxes
         civListView.getItems().stream()
                 .map(civ -> new CheckBox(civ))
                 .forEach(civCheckBoxVBox.getChildren()::add);
 
-        categoryListView.setMaxWidth(Double.MAX_VALUE);
         civListView.setMaxWidth(Double.MAX_VALUE);
+        VBox civFilterBox = new VBox(10, new Label("Civilizations"), civCheckBoxVBox);
+
+        tagCheckBoxVBox.setSpacing(5);
+        tagCheckBoxVBox.setMaxHeight(100);
+
+        List<String> allTags=artifactList.stream()
+                .flatMap(a -> a.getTags() != null ? a.getTags().stream() : java.util.stream.Stream.empty())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+
+        tagListView.getItems().setAll(allTags);
+        allTags.stream()
+                .map(tag -> new CheckBox(tag))
+                .forEach(tagCheckBoxVBox.getChildren()::add);
+
+        VBox tagFilterBox = new VBox(10, new Label("Tags"), tagCheckBoxVBox);
+
 
         Button applyFiltersButton = new Button("Apply Filters");
         Button clearFiltersButton = new Button("Clear Filters");
@@ -344,6 +363,7 @@ public class MainWindow extends Application {
         selectedNameLabel.setText("Name: All");
         selectedCategoryLabel.setText("Category: All");
         selectedCivLabel.setText("Civilization: All");
+        selectedTagLabel.setText("Tag: All");
         selectedLocationLabel.setText("Location: All");
         selectedDateLabel.setText("Date: All");
         selectedCurrentPlaceLabel.setText("Current Place: All");
@@ -355,6 +375,7 @@ public class MainWindow extends Application {
                 selectedNameLabel,
                 selectedCategoryLabel,
                 selectedCivLabel,
+                selectedTagLabel,
                 selectedLocationLabel,
                 selectedDateLabel,
                 selectedCurrentPlaceLabel,
@@ -411,19 +432,24 @@ public class MainWindow extends Application {
             String selectedCurrentPlace = placeFilter.getText();
             String selectedComposition = compositionFilter.getText();
 
+            List<String> selectedTags = tagCheckBoxVBox.getChildren().stream()
+                    .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
+                    .map(node -> ((CheckBox) node).getText())
+                    .collect(Collectors.toList());
+
             // Pass the selected categories and civilizations to the filter method
             applyFilters(
-                    selectedId, selectedName, selectedCategories, selectedCivs,
+                    selectedId, selectedName, selectedCategories, selectedCivs, selectedTags,
                     selectedLocation, selectedStartDate, selectedEndDate,
                     selectedCurrentPlace, selectedComposition,
                     selectedIdLabel, selectedNameLabel, selectedCategoryLabel,
-                    selectedCivLabel, selectedLocationLabel, selectedDateLabel,
+                    selectedCivLabel, selectedTagLabel, selectedLocationLabel, selectedDateLabel,
                     selectedCurrentPlaceLabel, selectedCompositionLabel
             );
 
             // Eğer en az bir filtre seçildiyse Selected Filters kutusunu göster
             boolean isFilterApplied = !selectedId.isEmpty() || !selectedName.isEmpty() ||
-                    !selectedCategories.isEmpty() || !selectedCivs.isEmpty() ||
+                    !selectedCategories.isEmpty() || !selectedCivs.isEmpty() || !selectedTags.isEmpty() ||
                     !selectedLocation.isEmpty() || selectedStartDate != null || selectedEndDate != null ||
                     !selectedCurrentPlace.isEmpty() || !selectedComposition.isEmpty();
 
@@ -464,6 +490,11 @@ public class MainWindow extends Application {
                     ((CheckBox) node).setSelected(false);
                 }
             });
+            tagCheckBoxVBox.getChildren().forEach(node -> {
+                if (node instanceof CheckBox) {
+                    ((CheckBox) node).setSelected(false);
+                }
+            });
 
             // Tüm artifactleri geri yükle
             tableView.getItems().setAll(artifactList);
@@ -478,14 +509,14 @@ public class MainWindow extends Application {
             selectedNameLabel.setText("Name: All");
             selectedCategoryLabel.setText("Category: All");
             selectedCivLabel.setText("Civilization: All");
+            selectedTagLabel.setText("Tags: All");
             selectedLocationLabel.setText("Location: All");
             selectedDateLabel.setText("Date: All");
             selectedCurrentPlaceLabel.setText("Current Place: All");
             selectedCompositionLabel.setText("Composition: All");
         });
-
         filters.getChildren().addAll(
-                idFilter,nameFilter, categoryFilterBox, civFilterBox,
+                idFilter,nameFilter, categoryFilterBox, civFilterBox, tagFilterBox,
                 locationFilter,  startDateFilter, endDateFilter, placeFilter,
                 compositionFilter, buttons
         );
@@ -496,10 +527,10 @@ public class MainWindow extends Application {
 
     private void applyFilters(
             String selectedId, String selectedName, List<String> selectedCategories, List<String> selectedCivs,
-            String selectedLocation, LocalDate selectedStartDate, LocalDate selectedEndDate,
+            List<String> selectedTags, String selectedLocation, LocalDate selectedStartDate, LocalDate selectedEndDate,
             String selectedCurrentPlace, String selectedComposition,
             Label selectedIdLabel, Label selectedNameLabel, Label selectedCategoryLabel,
-            Label selectedCivLabel, Label selectedLocationLabel, Label selectedDateLabel,
+            Label selectedCivLabel, Label selectedTagLabel, Label selectedLocationLabel, Label selectedDateLabel,
             Label selectedCurrentPlaceLabel, Label selectedCompositionLabel
     ){
         List<Artifact> filtered = artifactList.stream()
@@ -507,6 +538,7 @@ public class MainWindow extends Application {
                 .filter(a -> a.getArtifactName().toLowerCase().contains(nameFilter.getText().toLowerCase()))
                 .filter(a -> selectedCategories.isEmpty() || selectedCategories.contains(a.getCategory()))
                 .filter(a -> selectedCivs.isEmpty() || selectedCivs.contains(a.getCivilization()))
+                .filter(a -> selectedTags.isEmpty() || (a.getTags() != null && a.getTags().stream().anyMatch(selectedTags::contains)))
                 .filter(a -> a.getDiscoveryLocation().toLowerCase().contains(locationFilter.getText().toLowerCase()))
                 .filter(a -> {
                     try {
@@ -568,6 +600,15 @@ public class MainWindow extends Application {
         } else {
             selectedCivLabel.setVisible(false);
             selectedCivLabel.setManaged(false);
+        }
+        //Tag
+        if (!selectedTags.isEmpty()) {
+            selectedTagLabel.setText("Tags: " + String.join(", ", selectedTags));
+            selectedTagLabel.setVisible(true);
+            selectedTagLabel.setManaged(true);
+        } else {
+            selectedTagLabel.setVisible(false);
+            selectedTagLabel.setManaged(false);
         }
 
         // Location
@@ -760,6 +801,17 @@ public class MainWindow extends Application {
         civListView.getItems().stream()
                 .map(civ -> new CheckBox(civ))
                 .forEach(civCheckBoxVBox.getChildren()::add);
+
+        tagCheckBoxVBox.getChildren().clear();
+        List<String> allTags = artifactList.stream()
+                .flatMap(a -> a.getTags() != null ? a.getTags().stream() : java.util.stream.Stream.empty())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+
+        allTags.stream()
+                .map(tag -> new CheckBox(tag))
+                .forEach(tagCheckBoxVBox.getChildren()::add);
     }
 
     private void reassignArtifactIDs() {
