@@ -10,9 +10,21 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+
+import javafx.scene.image.ImageView;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +33,10 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import javafx.scene.image.Image;
+
+
 
 public class MainWindow extends Application {
 
@@ -203,6 +219,19 @@ public class MainWindow extends Application {
         stage.setTitle("Historical Artifact Catalog");
         stage.setScene(scene);
         stage.show();
+
+        //double click
+        tableView.setRowFactory(tv -> {
+            TableRow<Artifact> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                    Artifact rowData = row.getItem();
+                    showArtifactDetailsDialog(rowData);
+                }
+            });
+            return row;
+        });
+
     }
 
     private void reassignArtifactIds() {
@@ -819,6 +848,52 @@ public class MainWindow extends Application {
             artifactList.get(i).setArtifactId(i + 1); // ID’ler 1’den başlasın
         }
     }
+
+    private void showArtifactDetailsDialog(Artifact artifact) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Artifact Details");
+
+        ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType);
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+
+        // Artifact bilgileri
+        Label nameLabel = new Label("Name: " + artifact.getArtifactName());
+        Label categoryLabel = new Label("Category: " + artifact.getCategory());
+        Label civLabel = new Label("Civilization: " + artifact.getCivilization());
+        Label locationLabel = new Label("Discovery Location: " + artifact.getDiscoveryLocation());
+        Label dateLabel = new Label("Discovery Date: " + (artifact.getDiscoveryDate() != null ? artifact.getDiscoveryDate().toString() : "Unknown"));
+        Label placeLabel = new Label("Current Place: " + artifact.getCurrentPlace());
+        Label compositionLabel = new Label("Composition: " + artifact.getComposition());
+        Label tagsLabel = new Label("Tags: " + (artifact.getTags() != null ? String.join(", ", artifact.getTags()) : "None"));
+
+        // Görsel (imagePath üzerinden)
+        ImageView imageView = new ImageView();
+        if (artifact.getImagePath() != null && !artifact.getImagePath().isEmpty()) {
+            try {
+                Image image = new Image(getClass().getResourceAsStream("/" + artifact.getImagePath()));
+                imageView.setImage(image);
+                imageView.setFitWidth(300);
+                imageView.setPreserveRatio(true);
+            } catch (Exception e) {
+                content.getChildren().add(new Label("Image could not be loaded."));
+            }
+        } else {
+            content.getChildren().add(new Label("No image available."));
+        }
+
+
+        content.getChildren().addAll(
+                nameLabel, categoryLabel, civLabel, locationLabel, dateLabel,
+                placeLabel, compositionLabel, tagsLabel, imageView
+        );
+
+        dialog.getDialogPane().setContent(content);
+        dialog.showAndWait();
+    }
+
 
     public static void main(String[] args) {
         launch();
