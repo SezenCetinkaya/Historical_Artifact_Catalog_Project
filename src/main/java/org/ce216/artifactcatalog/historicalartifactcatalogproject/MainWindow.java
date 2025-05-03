@@ -20,6 +20,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -29,11 +30,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javafx.scene.image.Image;
@@ -59,6 +59,7 @@ public class MainWindow extends Application {
     private VBox categoryCheckBoxVBox = new VBox();
     private VBox civCheckBoxVBox = new VBox();
     private VBox tagCheckBoxVBox = new VBox();
+    private String imageDirectoryPath = null;
     DatePicker startDateFilter = new DatePicker();
     DatePicker endDateFilter = new DatePicker();
     DatePicker datePicker =new DatePicker();
@@ -101,7 +102,7 @@ public class MainWindow extends Application {
         menuBar.getMenus().addAll(mfile, mhelp, mview, mfunctions, mFilter);
 
         // Import/Export actions
-        addImportFileButton.setOnAction(e -> importFile(stage));
+        addImportFileButton.setOnAction(e -> showImportOptions(stage));
         addExportFileButton.setOnAction(e -> exportFile(stage));
 
         //Filter area
@@ -235,6 +236,10 @@ public class MainWindow extends Application {
         });
 
         loadDefaultArtifacts();
+        File imageDir = new File("images");
+        if (imageDir.exists() && imageDir.isDirectory()) {
+            imageDirectoryPath = imageDir.getAbsolutePath();
+        }
 
     }
 
@@ -692,6 +697,71 @@ public class MainWindow extends Application {
             selectedCompositionLabel.setManaged(false);
         }
     }
+    private void showImportOptions(Stage stage) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Import Options");
+
+        // Buton tiplerini ayarla
+        ButtonType imageButtonType = new ButtonType("Import Image Folder", ButtonBar.ButtonData.OTHER);
+        ButtonType jsonButtonType = new ButtonType("Import JSON File", ButtonBar.ButtonData.OTHER); // mavi olmasın
+        ButtonType cancelButtonType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        dialog.getDialogPane().getButtonTypes().addAll(jsonButtonType, imageButtonType, cancelButtonType);
+
+        // İçerik
+        VBox content = new VBox(15); // Butonlar arası boşluk için artırıldı
+        content.setPadding(new Insets(20));
+        content.setAlignment(Pos.CENTER_LEFT);
+        content.getChildren().add(new Label("What would you like to import?"));
+
+        dialog.getDialogPane().setContent(content);
+
+        // CANCEL butonunu küçültmek için stil ver (CSS ile)
+        Button cancelButton = (Button) dialog.getDialogPane().lookupButton(cancelButtonType);
+        cancelButton.setStyle("-fx-font-size: 10px; -fx-padding: 3 7 3 7;");
+
+        Optional<ButtonType> result = dialog.showAndWait();
+
+        if (result.isPresent()) {
+            if (result.get() == jsonButtonType) {
+                importFile(stage);
+            } else if (result.get() == imageButtonType) {
+                importImageFolder(stage);
+            }
+        }
+    }
+
+    private void importImageFolder(Stage stage) {
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Select Image Folder");
+
+        File selectedDir = directoryChooser.showDialog(stage);
+        if (selectedDir != null && selectedDir.isDirectory()) {
+            File[] imageFiles = selectedDir.listFiles(file ->
+                    file.getName().endsWith(".jpg") || file.getName().endsWith(".png"));
+
+            if (imageFiles != null) {
+                File outputDir = new File("images");
+                if (!outputDir.exists()) {
+                    outputDir.mkdir(); // Proje kökünde "images" klasörü yoksa oluştur
+                }
+
+                for (File imageFile : imageFiles) {
+                    try {
+                        File destinationFile = new File(outputDir, imageFile.getName());
+                        Files.copy(imageFile.toPath(), destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        System.out.println("Image copied: " + destinationFile.getName());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        System.out.println("Error copying image: " + imageFile.getName());
+                    }
+                }
+
+                // Artık images dizini kalıcı oldu
+                imageDirectoryPath = outputDir.getAbsolutePath(); // Artık program yeniden başladığında burayı kullan
+            }
+        }
+    }
 
     private void importFile(Stage stage) {
         FileChooser fileChooser = new FileChooser();
@@ -921,7 +991,6 @@ public class MainWindow extends Application {
         VBox content = new VBox(10);
         content.setPadding(new Insets(10));
 
-        // Artifact bilgileri
         Label nameLabel = new Label("Name: " + artifact.getArtifactName());
         Label categoryLabel = new Label("Category: " + artifact.getCategory());
         Label civLabel = new Label("Civilization: " + artifact.getCivilization());
@@ -933,12 +1002,17 @@ public class MainWindow extends Application {
 
         // Görsel (imagePath üzerinden)
         ImageView imageView = new ImageView();
-        if (artifact.getImagePath() != null && !artifact.getImagePath().isEmpty()) {
+        if (artifact.getImagePath() != null && !artifact.getImagePath().isEmpty() && imageDirectoryPath != null) {
             try {
-                Image image = new Image(getClass().getResourceAsStream("/" + artifact.getImagePath()));
-                imageView.setImage(image);
-                imageView.setFitWidth(300);
-                imageView.setPreserveRatio(true);
+                File imageFile = new File(imageDirectoryPath, artifact.getImagePath()); // yeni yol
+                if (imageFile.exists()) {
+                    Image image = new Image(imageFile.toURI().toString()); // toURI ile dış dosyadan yükle
+                    imageView.setImage(image);
+                    imageView.setFitWidth(300);
+                    imageView.setPreserveRatio(true);
+                } else {
+                    content.getChildren().add(new Label("Image file not found: " + imageFile.getName()));
+                }
             } catch (Exception e) {
                 content.getChildren().add(new Label("Image could not be loaded."));
             }
@@ -955,12 +1029,9 @@ public class MainWindow extends Application {
         dialog.getDialogPane().setContent(content);
         dialog.showAndWait();
     }
-
-
+    
     public static void main(String[] args) {
         launch();
     }
-
-
 
 }
