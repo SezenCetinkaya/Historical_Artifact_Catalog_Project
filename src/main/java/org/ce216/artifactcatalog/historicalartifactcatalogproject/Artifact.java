@@ -2,6 +2,7 @@ package org.ce216.artifactcatalog.historicalartifactcatalogproject;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 public class Artifact {
     private static int idCounter=1;
@@ -157,5 +158,19 @@ public class Artifact {
     public void setImagePath(String imagePath) {
         this.imagePath = imagePath;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Artifact artifact = (Artifact) o;
+        return Objects.equals(artifactId, artifact.artifactId); // ID varsa onu kullan, yoksa başka benzersiz alan
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(artifactId); // ID varsa onunla hashle
+    }
+
 
 }

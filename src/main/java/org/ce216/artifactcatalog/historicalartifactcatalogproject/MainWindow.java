@@ -31,7 +31,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javafx.scene.image.Image;
@@ -231,6 +233,8 @@ public class MainWindow extends Application {
             });
             return row;
         });
+
+        loadDefaultArtifacts();
 
     }
 
@@ -691,33 +695,91 @@ public class MainWindow extends Application {
 
     private void importFile(Stage stage) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Import File");
+        fileChooser.setTitle("Import Files");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
-        File selectedFile = fileChooser.showOpenDialog(stage);
 
-        if (selectedFile != null) {
+        List<File> selectedFiles = fileChooser.showOpenMultipleDialog(stage);
+
+        if (selectedFiles != null && !selectedFiles.isEmpty()) {
             ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
+            Set<Artifact> existingArtifacts = new HashSet<>(artifactList);
+
+            for (File file : selectedFiles) {
+                try {
+                    ArtifactManager wrapper = mapper.readValue(file, ArtifactManager.class);
+                    List<Artifact> importedArtifacts = wrapper.getArtifacts();
+
+                    for (Artifact artifact : importedArtifacts) {
+                        if (!existingArtifacts.contains(artifact)) {
+                            artifactList.add(artifact);
+                            existingArtifacts.add(artifact); // Güncel Set'e de ekle
+                        }
+                    }
+
+                    System.out.println("Imported from: " + file.getName());
+
+                } catch (IOException e) {
+                    System.out.println("Failed to read JSON file: " + file.getName());
+                    e.printStackTrace();
+                }
+            }
+
+
+            tableView.getItems().setAll(artifactList);
+            updateFilters();
+            saveToDefault(); // 👈 Yeni verileri default.json'a kaydet
+
+        } else {
+            System.out.println("No files selected.");
+        }
+    }
+
+    private void saveToDefault() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        ArtifactManager manager = new ArtifactManager();
+        manager.setArtifacts(artifactList);
+
+        try {
+            mapper.writerWithDefaultPrettyPrinter().writeValue(new File("default.json"), manager);
+            System.out.println("Saved artifacts to default.json");
+
+        } catch (IOException e) {
+            System.out.println("Failed to save to default.json");
+            e.printStackTrace();
+        }
+    }
+
+
+    private void loadDefaultArtifacts() {
+        File defaultFile = new File("default.json");
+        if (defaultFile.exists()) {
+            ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
             try {
-                ArtifactManager wrapper = mapper.readValue(selectedFile, ArtifactManager.class);
+                ArtifactManager wrapper = mapper.readValue(defaultFile, ArtifactManager.class);
                 artifactList = wrapper.getArtifacts();
                 tableView.getItems().setAll(artifactList);
-                System.out.println("Imported " + artifactList.size() + " artifacts.");
-
-                // Update the category and civilization ListView and CheckBoxes after import
                 updateFilters();
+                System.out.println("Loaded default artifacts: " + artifactList.size());
 
             } catch (IOException e) {
-                System.out.println("Failed to read JSON file.");
+                System.out.println("Failed to load default.json");
                 e.printStackTrace();
             }
         } else {
-            System.out.println("No file selected.");
+            System.out.println("No default.json found. Starting with empty list.");
+            artifactList = new ArrayList<>();
         }
     }
+
 
     private void exportFile(Stage stage) {
         FileChooser fileChooser = new FileChooser();
