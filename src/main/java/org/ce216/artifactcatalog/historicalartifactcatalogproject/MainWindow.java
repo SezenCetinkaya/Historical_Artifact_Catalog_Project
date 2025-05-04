@@ -23,9 +23,7 @@ import javafx.scene.layout.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-
 import javafx.scene.image.ImageView;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,10 +33,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
-
 import javafx.scene.image.Image;
-
-
 
 public class MainWindow extends Application {
 
@@ -94,7 +89,7 @@ public class MainWindow extends Application {
         MenuItem deleteArtifactItem = new MenuItem("Delete Artifact");
         MenuItem filterItem = new MenuItem("Filter");
 
-        mfile.getItems().addAll(addExportFileButton, addImportFileButton);
+        mfile.getItems().addAll(addImportFileButton, addExportFileButton);
         mhelp.getItems().add(viewHelpItem);
         mview.getItems().add(showTableItem);
         mfunctions.getItems().addAll(createArtifactItem, editArtifactItem, deleteArtifactItem);
@@ -104,7 +99,7 @@ public class MainWindow extends Application {
         // Import/Export actions
         addImportFileButton.setOnAction(e -> showImportOptions(stage));
         addExportFileButton.setOnAction(e -> showExportOptions(stage));
-        
+
         //Filter area
         VBox filterPane = createFilterPane();
 
@@ -123,9 +118,18 @@ public class MainWindow extends Application {
         deleteArtifactItem.setOnAction(e -> {
             Artifact selected = tableView.getSelectionModel().getSelectedItem();
             if (selected != null) {
+                // Görseli sil
+                String imagePath = selected.getImagePath();
+                if (imagePath != null && !imagePath.isBlank()) {
+                    File imageFile = new File("images", imagePath);
+                    if (imageFile.exists()) {
+                        imageFile.delete();
+                    }
+                }
                 artifactList.remove(selected);
                 reassignArtifactIDs();
                 updateFilters();
+                saveToDefault();
                 tableView.getItems().setAll(artifactList);
             } else {
                 showAlert("Please select an artifact to delete.");
@@ -246,7 +250,7 @@ public class MainWindow extends Application {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Export Options");
 
-        ButtonType exportJsonType = new ButtonType("Export JSON File", ButtonBar.ButtonData.OK_DONE);
+        ButtonType exportJsonType = new ButtonType("Export JSON File", ButtonBar.ButtonData.OTHER);
         ButtonType exportImagesType = new ButtonType("Export Pictures", ButtonBar.ButtonData.OTHER);
         ButtonType cancelType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
 
@@ -298,8 +302,6 @@ public class MainWindow extends Application {
         }
     }
 
-
-
     private void reassignArtifactIds() {
         for (int i = 0; i < artifactList.size(); i++) {
             artifactList.get(i).setArtifactId(i + 1);
@@ -328,11 +330,54 @@ public class MainWindow extends Application {
         TextField placeField = new TextField(artifact.getCurrentPlace());
         TextField compositionField = new TextField(artifact.getComposition());
 
-        // Tarih alanı artık DatePicker
         DatePicker datePicker = new DatePicker();
         if (artifact.getDiscoveryDate() != null) {
             datePicker.setValue(artifact.getDiscoveryDate());
         }
+
+        Label imageLabel = new Label(artifact.getImagePath() != null ? artifact.getImagePath() : "No image selected");
+        Button browseImageButton = new Button("Change Image");
+
+        browseImageButton.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Select Image");
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif")
+            );
+            File selectedFile = fileChooser.showOpenDialog(dialog.getOwner());
+
+            if (selectedFile != null) {
+                try {
+                    // Uzantıyı al
+                    String originalName = selectedFile.getName();
+                    String extension = "";
+                    int dotIndex = originalName.lastIndexOf('.');
+                    if (dotIndex > 0 && dotIndex < originalName.length() - 1) {
+                        extension = originalName.substring(dotIndex); // Örn: ".jpg"
+                    }
+
+                    // Yeni dosya adı: artifact ID + uzantı
+                    String newFileName = artifact.getArtifactId() + extension;
+
+                    // images klasörüne kaydet
+                    File imagesDir = new File("images");
+                    if (!imagesDir.exists()) {
+                        imagesDir.mkdirs();
+                    }
+
+                    File destFile = new File(imagesDir, newFileName);
+
+                    // Kopyala ve üzerine yaz
+                    Files.copy(selectedFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                    // Label'a yeni ad
+                    imageLabel.setText(newFileName);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    imageLabel.setText("Image copy failed!");
+                }
+            }
+        });
 
         VBox vbox = new VBox(5);
         vbox.getChildren().addAll(
@@ -342,7 +387,8 @@ public class MainWindow extends Application {
                 new Label("Discovery Location:"), locationField,
                 new Label("Discovery Date:"), datePicker,
                 new Label("Current Place:"), placeField,
-                new Label("Composition:"), compositionField
+                new Label("Composition:"), compositionField,
+                new Label("Image Path:"), imageLabel, browseImageButton
         );
 
         dialog.getDialogPane().setContent(vbox);
@@ -354,13 +400,13 @@ public class MainWindow extends Application {
                 artifact.setCivilization(civilizationField.getText());
                 artifact.setDiscoveryLocation(locationField.getText());
                 artifact.setCurrentPlace(placeField.getText());
-
-                // DatePicker'dan alınan tarihi doğrudan kullanabiliriz
-                LocalDate selectedDate = datePicker.getValue();
-                artifact.setDiscoveryDate(selectedDate);
+                artifact.setDiscoveryDate(datePicker.getValue());
                 artifact.setComposition(compositionField.getText());
+                artifact.setImagePath(imageLabel.getText());
+
                 updateFilters();
                 tableView.refresh(); // Tabloyu güncelle
+                saveToDefault();
             }
             return null;
         });
@@ -773,10 +819,6 @@ public class MainWindow extends Application {
 
         dialog.getDialogPane().setContent(content);
 
-        // CANCEL butonunu küçültmek için stil ver (CSS ile)
-        Button cancelButton = (Button) dialog.getDialogPane().lookupButton(cancelButtonType);
-        cancelButton.setStyle("-fx-font-size: 10px; -fx-padding: 3 7 3 7;");
-
         Optional<ButtonType> result = dialog.showAndWait();
 
         if (result.isPresent()) {
@@ -857,7 +899,7 @@ public class MainWindow extends Application {
 
             tableView.getItems().setAll(artifactList);
             updateFilters();
-            saveToDefault(); // 👈 Yeni verileri default.json'a kaydet
+            saveToDefault();
 
         } else {
             System.out.println("No files selected.");
@@ -965,6 +1007,23 @@ public class MainWindow extends Application {
         DatePicker datePicker = new DatePicker();
         TextField placeField = new TextField();
 
+        Label imageLabel = new Label("No image selected");
+        Button browseImageButton = new Button("Select Image");
+        final File[] selectedImageFile = new File[1]; // dışarıdan erişim için array
+
+        browseImageButton.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Select Image");
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif")
+            );
+            File file = fileChooser.showOpenDialog(stage);
+            if (file != null) {
+                selectedImageFile[0] = file;
+                imageLabel.setText(file.getAbsolutePath());
+            }
+        });
+
         vbox.getChildren().addAll(
                 new Label("Artifact Name:"), nameField,
                 new Label("Category:"), categoryField,
@@ -972,7 +1031,8 @@ public class MainWindow extends Application {
                 new Label("Discovery Location:"), locationField,
                 new Label("Discovery Date:"), datePicker,
                 new Label("Current Place:"), placeField,
-                new Label("Composition:"), compositionField
+                new Label("Composition:"), compositionField,
+                new Label("Image Path:"), imageLabel, browseImageButton
         );
 
         dialog.getDialogPane().setContent(vbox);
@@ -987,9 +1047,39 @@ public class MainWindow extends Application {
                 newArtifact.setDiscoveryDate(datePicker.getValue() != null ? datePicker.getValue() : newArtifact.getDiscoveryDate());
                 newArtifact.setCurrentPlace(placeField.getText().isEmpty() ? newArtifact.getCurrentPlace() : placeField.getText());
                 newArtifact.setComposition(compositionField.getText().isEmpty() ? newArtifact.getComposition() : compositionField.getText());
+
+                // artifactList'e ekleyip ID'sini oluşturduktan sonra kaydedilecek
                 artifactList.add(newArtifact);
+                saveToDefault(); // ID atanmış olur (eğer ID otomatikse)
                 updateFilters();
                 tableView.getItems().setAll(artifactList);
+
+                // Eğer bir resim seçildiyse ve Artifact ID varsa kopyala
+                if (selectedImageFile[0] != null && newArtifact.getArtifactId() != 0) {
+                    try {
+                        String originalName = selectedImageFile[0].getName();
+                        String extension = "";
+                        int dotIndex = originalName.lastIndexOf('.');
+                        if (dotIndex > 0 && dotIndex < originalName.length() - 1) {
+                            extension = originalName.substring(dotIndex);
+                        }
+
+                        File imagesDir = new File("images");
+                        if (!imagesDir.exists()) {
+                            imagesDir.mkdirs();
+                        }
+
+                        String newFileName = newArtifact.getArtifactId() + extension;
+                        File destFile = new File(imagesDir, newFileName);
+                        Files.copy(selectedImageFile[0].toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                        newArtifact.setImagePath(newFileName);
+                        saveToDefault(); // imagePath'i de kaydet
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
                 return newArtifact;
             }
             return null;
