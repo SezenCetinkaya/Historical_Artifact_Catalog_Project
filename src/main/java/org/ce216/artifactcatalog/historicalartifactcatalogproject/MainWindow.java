@@ -103,8 +103,8 @@ public class MainWindow extends Application {
 
         // Import/Export actions
         addImportFileButton.setOnAction(e -> showImportOptions(stage));
-        addExportFileButton.setOnAction(e -> exportFile(stage));
-
+        addExportFileButton.setOnAction(e -> showExportOptions(stage));
+        
         //Filter area
         VBox filterPane = createFilterPane();
 
@@ -242,6 +242,63 @@ public class MainWindow extends Application {
         }
 
     }
+    private void showExportOptions(Stage stage) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Export Options");
+
+        ButtonType exportJsonType = new ButtonType("Export JSON File", ButtonBar.ButtonData.OK_DONE);
+        ButtonType exportImagesType = new ButtonType("Export Pictures", ButtonBar.ButtonData.OTHER);
+        ButtonType cancelType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        dialog.getDialogPane().getButtonTypes().addAll(exportJsonType, exportImagesType, cancelType);
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+        content.getChildren().add(new Label("What would you like to export?"));
+
+        dialog.getDialogPane().setContent(content);
+
+        Optional<ButtonType> result = dialog.showAndWait();
+
+        if (result.isPresent()) {
+            if (result.get() == exportJsonType) {
+                exportFile(stage);
+            } else if (result.get() == exportImagesType) {
+                exportImages(stage);
+            }
+        }
+    }
+    private void exportImages(Stage stage) {
+        DirectoryChooser dirChooser = new DirectoryChooser();
+        dirChooser.setTitle("Select Folder to Save Pictures");
+
+        File targetDir = dirChooser.showDialog(stage);
+        if (targetDir != null) {
+            File imageSourceDir = new File("images");
+            if (imageSourceDir.exists() && imageSourceDir.isDirectory()) {
+                for (Artifact artifact : artifactList) {
+                    String imagePath = artifact.getImagePath();
+                    if (imagePath != null && !imagePath.isEmpty()) {
+                        File sourceFile = new File(imageSourceDir, imagePath);
+                        if (sourceFile.exists()) {
+                            File destFile = new File(targetDir, sourceFile.getName());
+                            try {
+                                Files.copy(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                System.out.println("Copied: " + destFile.getName());
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+                System.out.println("All images exported to: " + targetDir.getAbsolutePath());
+            } else {
+                System.out.println("No images to export.");
+            }
+        }
+    }
+
+
 
     private void reassignArtifactIds() {
         for (int i = 0; i < artifactList.size(); i++) {
@@ -1029,7 +1086,7 @@ public class MainWindow extends Application {
         dialog.getDialogPane().setContent(content);
         dialog.showAndWait();
     }
-    
+
     public static void main(String[] args) {
         launch();
     }
