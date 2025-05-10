@@ -4,36 +4,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import javafx.application.Application;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
+import javafx.beans.property.*;
+import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.image.*;
 import javafx.scene.layout.*;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
-import javafx.scene.image.ImageView;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import javafx.stage.*;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
-import javafx.scene.image.Image;
 
 public class MainWindow extends Application {
 
@@ -127,7 +111,6 @@ public class MainWindow extends Application {
                     }
                 }
                 artifactList.remove(selected);
-                reassignArtifactIDs();
                 updateFilters();
                 saveToDefault();
                 tableView.getItems().setAll(artifactList);
@@ -137,7 +120,7 @@ public class MainWindow extends Application {
         });
 
         // Table Columns
-        TableColumn<Artifact, Integer> idCol = new TableColumn<>("ID");
+        TableColumn<Artifact, String> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(data -> new SimpleObjectProperty<>(data.getValue().getArtifactId()));
 
         TableColumn<Artifact, String> nameCol = new TableColumn<>("Name");
@@ -299,12 +282,6 @@ public class MainWindow extends Application {
             } else {
                 System.out.println("No images to export.");
             }
-        }
-    }
-
-    private void reassignArtifactIds() {
-        for (int i = 0; i < artifactList.size(); i++) {
-            artifactList.get(i).setArtifactId(i + 1);
         }
     }
 
@@ -874,7 +851,7 @@ public class MainWindow extends Application {
             mapper.registerModule(new JavaTimeModule());
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-            Set<Artifact> existingArtifacts = new HashSet<>(artifactList);
+            Set<Artifact> existingArtifacts = new HashSet<>();
 
             for (File file : selectedFiles) {
                 try {
@@ -882,9 +859,15 @@ public class MainWindow extends Application {
                     List<Artifact> importedArtifacts = wrapper.getArtifacts();
 
                     for (Artifact artifact : importedArtifacts) {
+                        // Eğer artifactId null, boş veya "Unknown" ise üret
+                        if (artifact.getArtifactId() == null || artifact.getArtifactId().equals("Unknown")) {
+                            artifact.setArtifactId();
+                        }
+
+                        // artifactId'ye göre kontrol et
                         if (!existingArtifacts.contains(artifact)) {
                             artifactList.add(artifact);
-                            existingArtifacts.add(artifact); // Güncel Set'e de ekle
+                            existingArtifacts.add(artifact);
                         }
                     }
 
@@ -895,7 +878,6 @@ public class MainWindow extends Application {
                     e.printStackTrace();
                 }
             }
-
 
             tableView.getItems().setAll(artifactList);
             updateFilters();
@@ -1055,7 +1037,7 @@ public class MainWindow extends Application {
                 tableView.getItems().setAll(artifactList);
 
                 // Eğer bir resim seçildiyse ve Artifact ID varsa kopyala
-                if (selectedImageFile[0] != null && newArtifact.getArtifactId() != 0) {
+                if (selectedImageFile[0] != null && newArtifact.getArtifactId() != null) {
                     try {
                         String originalName = selectedImageFile[0].getName();
                         String extension = "";
@@ -1120,12 +1102,6 @@ public class MainWindow extends Application {
         allTags.stream()
                 .map(tag -> new CheckBox(tag))
                 .forEach(tagCheckBoxVBox.getChildren()::add);
-    }
-
-    private void reassignArtifactIDs() {
-        for (int i = 0; i < artifactList.size(); i++) {
-            artifactList.get(i).setArtifactId(i + 1); // ID’ler 1’den başlasın
-        }
     }
 
     private void showArtifactDetailsDialog(Artifact artifact) {

@@ -6,7 +6,7 @@ import java.util.Objects;
 
 public class Artifact {
     private static int idCounter=1;
-    private int artifactId;
+    private String artifactId;
     private String artifactName;
     private String category;
     private String civilization;
@@ -19,7 +19,7 @@ public class Artifact {
     private String imagePath;
 
     public Artifact() {
-        this.artifactId=idCounter++;
+        this.artifactId="Unknown";
         this.artifactName = "Unknown";
         this.category = "Unknown";
         this.civilization = "Unknown";
@@ -30,10 +30,9 @@ public class Artifact {
     }
 
 
-    public Artifact(int artifactId, String artifactName, String category, String civilization,
+    public Artifact(String artifactName, String category, String civilization,
                     String discoveryLocation, String composition, LocalDate discoveryDate, String currentPlace,
                     double width, double length, double height, double weight, List<String> tags) {
-        this.artifactId = artifactId;
         this.artifactName = artifactName;
         this.category = category;
         this.civilization = civilization;
@@ -47,13 +46,20 @@ public class Artifact {
         this.weight = weight;
         this.tags = tags;
     }
-    public int getArtifactId() {
+    public String getArtifactId() {
         return artifactId;
     }
 
-    public void setArtifactId(int artifactId) {
-        this.artifactId = artifactId;
+    public void setArtifactId() {
+        if (discoveryDate == null || discoveryLocation == null || artifactName == null) {
+            this.artifactId = "Unknown-" + idCounter++;
+            return;
+        }
+
+        String shortName = artifactName.length() <= 3 ? artifactName : artifactName.substring(0, 3);
+        this.artifactId = discoveryDate.toString() + discoveryLocation + shortName;
     }
+
 
     public String getArtifactName() {
         return artifactName;
