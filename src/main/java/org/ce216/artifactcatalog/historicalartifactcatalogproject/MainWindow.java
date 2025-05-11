@@ -524,10 +524,24 @@ public class MainWindow extends Application {
         BorderPane.setAlignment(closeButton, Pos.CENTER_RIGHT);
 
         ScrollPane filterScrollPane = new ScrollPane(filters);
-
-        VBox filterPanel = new VBox(headerPane,selectedFiltersBox, filterScrollPane );
         filterScrollPane.setFitToHeight(true);
         filterScrollPane.setFitToWidth(true);
+
+        VBox filterPanel = new VBox(headerPane,selectedFiltersBox, filterScrollPane );
+
+        //filter özelliklerinin istendiğinde listelenmesi
+        Accordion accordion = new Accordion();
+        accordion.getPanes().addAll(
+                new TitledPane("Categories", categoryCheckBoxVBox),
+                new TitledPane("Civilizations", civCheckBoxVBox),
+                new TitledPane("Tags", tagCheckBoxVBox)
+        );
+        VBox staticFilters = new VBox(10,
+                idFilter, nameFilter, locationFilter,
+                startDateFilter, endDateFilter,
+                placeFilter, compositionFilter
+        );
+        filters.getChildren().addAll(staticFilters, accordion, buttons);
 
         applyFiltersButton.setOnAction(e -> {
             String selectedId = idFilter.getText();
@@ -633,11 +647,6 @@ public class MainWindow extends Application {
             selectedCurrentPlaceLabel.setText("Current Place: All");
             selectedCompositionLabel.setText("Composition: All");
         });
-        filters.getChildren().addAll(
-                idFilter,nameFilter, categoryFilterBox, civFilterBox, tagFilterBox,
-                locationFilter,  startDateFilter, endDateFilter, placeFilter,
-                compositionFilter, buttons
-        );
 
         filters.setPrefWidth(200);
         return filterPanel;
