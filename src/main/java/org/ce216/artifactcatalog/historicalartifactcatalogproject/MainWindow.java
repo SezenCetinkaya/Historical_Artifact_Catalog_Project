@@ -660,6 +660,17 @@ public class MainWindow extends Application {
             Label selectedCivLabel, Label selectedTagLabel, Label selectedLocationLabel, Label selectedDateLabel,
             Label selectedCurrentPlaceLabel, Label selectedCompositionLabel
     ){
+
+        // Tarih aralığı kontrolü
+        if (selectedStartDate != null && selectedEndDate != null && selectedEndDate.isBefore(selectedStartDate)) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Date Range Error");
+            alert.setHeaderText("Invalid Date Range");
+            alert.setContentText("End date cannot be before start date.");
+            alert.showAndWait();
+            return; // Filtreleme işlemini durdur
+        }
+
         List<Artifact> filtered = artifactList.stream()
                 .filter(a -> selectedId.isEmpty() || String.valueOf(a.getArtifactId()).equals(selectedId))
                 .filter(a -> a.getArtifactName().toLowerCase().contains(nameFilter.getText().toLowerCase()))
