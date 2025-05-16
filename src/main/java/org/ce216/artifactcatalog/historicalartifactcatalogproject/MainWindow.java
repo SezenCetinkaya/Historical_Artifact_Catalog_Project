@@ -536,14 +536,49 @@ public class MainWindow extends Application {
                 new TitledPane("Civilizations", civCheckBoxVBox),
                 new TitledPane("Tags", tagCheckBoxVBox)
         );
+        TextField minWidthField = new TextField();
+        minWidthField.setPromptText("Min Width (cm)");
+        TextField maxWidthField = new TextField();
+        maxWidthField.setPromptText("Max Width (cm)");
+
+        TextField minLengthField = new TextField();
+        minLengthField.setPromptText("Min Length (cm)");
+        TextField maxLengthField = new TextField();
+        maxLengthField.setPromptText("Max Length (cm)");
+
+        TextField minHeightField = new TextField();
+        minHeightField.setPromptText("Min Height (cm)");
+        TextField maxHeightField = new TextField();
+        maxHeightField.setPromptText("Max Height (cm)");
+
+        TextField minWeightField = new TextField();
+        minWeightField.setPromptText("Min Weight (kg)");
+        TextField maxWeightField = new TextField();
+        maxWeightField.setPromptText("Max Weight (kg)");
+        VBox sizeFilterBox = new VBox(5,
+                new Label("Width (cm)"), minWidthField, maxWidthField,
+                new Label("Length (cm)"), minLengthField, maxLengthField,
+                new Label("Height (cm)"), minHeightField, maxHeightField,
+                new Label("Weight (kg)"), minWeightField, maxWeightField
+        );
+        
         VBox staticFilters = new VBox(10,
                 idFilter, nameFilter, locationFilter,
                 startDateFilter, endDateFilter,
-                placeFilter, compositionFilter
+                placeFilter, compositionFilter, sizeFilterBox
         );
         filters.getChildren().addAll(staticFilters, accordion, buttons);
 
         applyFiltersButton.setOnAction(e -> {
+            Double minWidth = parseDoubleOrNull(minWidthField.getText());
+            Double maxWidth = parseDoubleOrNull(maxWidthField.getText());
+            Double minLength = parseDoubleOrNull(minLengthField.getText());
+            Double maxLength = parseDoubleOrNull(maxLengthField.getText());
+            Double minHeight = parseDoubleOrNull(minHeightField.getText());
+            Double maxHeight = parseDoubleOrNull(maxHeightField.getText());
+            Double minWeight = parseDoubleOrNull(minWeightField.getText());
+            Double maxWeight = parseDoubleOrNull(maxWeightField.getText());
+
             String selectedId = idFilter.getText();
             String selectedName = nameFilter.getText();
 
@@ -576,7 +611,7 @@ public class MainWindow extends Application {
                     selectedCurrentPlace, selectedComposition,
                     selectedIdLabel, selectedNameLabel, selectedCategoryLabel,
                     selectedCivLabel, selectedTagLabel, selectedLocationLabel, selectedDateLabel,
-                    selectedCurrentPlaceLabel, selectedCompositionLabel
+                    selectedCurrentPlaceLabel, selectedCompositionLabel ,minWidth, maxWidth, minLength, maxLength, minHeight, maxHeight, minWeight, maxWeight
             );
 
             // Eğer en az bir filtre seçildiyse Selected Filters kutusunu göster
@@ -610,6 +645,14 @@ public class MainWindow extends Application {
             endDateFilter.setValue(null);
             placeFilter.clear();
             compositionFilter.clear();
+            minWidthField.clear();
+            maxWidthField.clear();
+            minLengthField.clear();
+            maxLengthField.clear();
+            minHeightField.clear();
+            maxHeightField.clear();
+            minWeightField.clear();
+            maxWeightField.clear();
 
             // CheckBox'ların seçimini temizle
             categoryCheckBoxVBox.getChildren().forEach(node -> {
@@ -658,7 +701,8 @@ public class MainWindow extends Application {
             String selectedCurrentPlace, String selectedComposition,
             Label selectedIdLabel, Label selectedNameLabel, Label selectedCategoryLabel,
             Label selectedCivLabel, Label selectedTagLabel, Label selectedLocationLabel, Label selectedDateLabel,
-            Label selectedCurrentPlaceLabel, Label selectedCompositionLabel
+            Label selectedCurrentPlaceLabel, Label selectedCompositionLabel, Double minWidth, Double maxWidth, Double minLength, Double maxLength,
+            Double minHeight, Double maxHeight, Double minWeight, Double maxWeight
     ){
 
         // Tarih aralığı kontrolü
@@ -696,7 +740,17 @@ public class MainWindow extends Application {
                 })
                 .filter(a -> a.getCurrentPlace().toLowerCase().contains(placeFilter.getText().toLowerCase()))
                 .filter(a -> a.getComposition().toLowerCase().contains(compositionFilter.getText().toLowerCase()))
-                .collect(Collectors.toList());
+                .filter(a -> minWidth == null || a.getWidth() >= minWidth)
+                .filter(a -> maxWidth == null || a.getWidth() <= maxWidth)
+                .filter(a -> minLength == null || a.getLength() >= minLength)
+                .filter(a -> maxLength == null || a.getLength() <= maxLength)
+                .filter(a -> minHeight == null || a.getHeight() >= minHeight)
+                .filter(a -> maxHeight == null || a.getHeight() <= maxHeight)
+                .filter(a -> minWeight == null || a.getWeight() >= minWeight)
+                .filter(a -> maxWeight == null || a.getWeight() <= maxWeight)
+
+                .collect(Collectors.toList())
+                ;
 
         tableView.getItems().setAll(filtered);
         tableView.refresh();
@@ -1172,6 +1226,17 @@ public class MainWindow extends Application {
         dialog.getDialogPane().setContent(content);
         dialog.showAndWait();
     }
+    private Double parseDoubleOrNull(String text) {
+        try {
+            if (text == null || text.trim().isEmpty()) {
+                return null;
+            }
+            return Double.parseDouble(text.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
 
     public static void main(String[] args) {
         launch();
