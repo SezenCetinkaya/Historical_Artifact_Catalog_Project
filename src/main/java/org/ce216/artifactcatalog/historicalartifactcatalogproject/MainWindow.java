@@ -1305,6 +1305,13 @@ public class MainWindow extends Application {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Artifact Details");
 
+        // Sabit boyut ayarları
+        dialog.getDialogPane().setMinWidth(400);
+        dialog.getDialogPane().setMaxWidth(400);
+        dialog.getDialogPane().setMinHeight(500);
+        dialog.getDialogPane().setMaxHeight(500);
+        dialog.setResizable(false); // Kullanıcı boyutlandıramasın
+
         ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(okButtonType);
 
@@ -1315,21 +1322,25 @@ public class MainWindow extends Application {
         Label categoryLabel = new Label("Category: " + artifact.getCategory());
         Label civLabel = new Label("Civilization: " + artifact.getCivilization());
         Label locationLabel = new Label("Discovery Location: " + artifact.getDiscoveryLocation());
-        Label dateLabel = new Label("Discovery Date: " + (artifact.getDiscoveryDate() != null ? artifact.getDiscoveryDate().toString() : "Unknown"));
+        Label dateLabel = new Label("Discovery Date: " +
+                (artifact.getDiscoveryDate() != null ? artifact.getDiscoveryDate().toString() : "Unknown"));
         Label placeLabel = new Label("Current Place: " + artifact.getCurrentPlace());
         Label compositionLabel = new Label("Composition: " + artifact.getComposition());
-        Label tagsLabel = new Label("Tags: " + (artifact.getTags() != null ? String.join(", ", artifact.getTags()) : "None"));
+        Label tagsLabel = new Label("Tags: " +
+                (artifact.getTags() != null ? String.join(", ", artifact.getTags()) : "None"));
 
         // Görsel (imagePath üzerinden)
         ImageView imageView = new ImageView();
         if (artifact.getImagePath() != null && !artifact.getImagePath().isEmpty() && imageDirectoryPath != null) {
             try {
-                File imageFile = new File(imageDirectoryPath, artifact.getImagePath()); // yeni yol
+                File imageFile = new File(imageDirectoryPath, artifact.getImagePath());
                 if (imageFile.exists()) {
-                    Image image = new Image(imageFile.toURI().toString()); // toURI ile dış dosyadan yükle
+                    Image image = new Image(imageFile.toURI().toString());
                     imageView.setImage(image);
-                    imageView.setFitWidth(300);
+                    imageView.setFitWidth(300); // Maksimum genişlik
+                    imageView.setFitHeight(200); // Maksimum yükseklik
                     imageView.setPreserveRatio(true);
+                    imageView.setSmooth(true);
                 } else {
                     content.getChildren().add(new Label("Image file not found: " + imageFile.getName()));
                 }
@@ -1340,15 +1351,16 @@ public class MainWindow extends Application {
             content.getChildren().add(new Label("No image available."));
         }
 
-
         content.getChildren().addAll(
                 nameLabel, categoryLabel, civLabel, locationLabel, dateLabel,
                 placeLabel, compositionLabel, tagsLabel, imageView
         );
 
         dialog.getDialogPane().setContent(content);
+        dialog.initModality(Modality.APPLICATION_MODAL); // ana pencereyi kilitle
         dialog.showAndWait();
     }
+
 
     public static void main(String[] args) {
         launch();
