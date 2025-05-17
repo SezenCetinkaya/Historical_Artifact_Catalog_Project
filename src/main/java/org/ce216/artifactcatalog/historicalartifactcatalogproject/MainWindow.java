@@ -24,24 +24,26 @@ public class MainWindow extends Application {
     private List<Artifact> artifactList = new ArrayList<>();
     private TableView<Artifact> tableView = new TableView<>();
     private TextArea helpTextArea = new TextArea();
-    private TextField idFilter = new TextField();
-    private TextField nameFilter = new TextField();
-    private TextField categoryFilter = new TextField();
-    private TextField civilizationFilter = new TextField();
-    private TextField locationFilter = new TextField();
     private TextField dateFilter = new TextField();
-    private TextField placeFilter = new TextField();
-    private TextField compositionFilter = new TextField();
     private ListView<String> categoryListView = new ListView<>();
     private ListView<String> civListView = new ListView<>();
+    private ListView<String> idListView = new ListView<>();
+    private ListView<String> nameListView = new ListView<>();
+    private ListView<String> locListView = new ListView<>();
+    private ListView<String> placeListView = new ListView<>();
     private ListView<String> tagListView = new ListView<>();
+    private ListView<String> comListView = new ListView<>();
     private VBox categoryCheckBoxVBox = new VBox();
     private VBox civCheckBoxVBox = new VBox();
+    private VBox idCheckBoxVBox = new VBox();
+    private VBox nameCheckBoxVBox = new VBox();
+    private VBox locCheckBoxVBox = new VBox();
+    private VBox placeCheckBoxVBox = new VBox();
     private VBox tagCheckBoxVBox = new VBox();
+    private VBox comCheckBoxVBox = new VBox();
     private String imageDirectoryPath = null;
     DatePicker startDateFilter = new DatePicker();
     DatePicker endDateFilter = new DatePicker();
-    DatePicker datePicker =new DatePicker();
     Label selectedIdLabel = new Label("ID: All");
     Label selectedNameLabel = new Label("Name: All");
     Label selectedCategoryLabel = new Label("Category: All");
@@ -78,7 +80,7 @@ public class MainWindow extends Application {
         mview.getItems().add(showTableItem);
         mfunctions.getItems().addAll(createArtifactItem, editArtifactItem, deleteArtifactItem);
         mFilter.getItems().addAll(filterItem);
-        menuBar.getMenus().addAll(mfile, mhelp, mview, mfunctions, mFilter);
+        menuBar.getMenus().addAll(mfile, mview, mfunctions, mFilter, mhelp);
 
         // Import/Export actions
         addImportFileButton.setOnAction(e -> showImportOptions(stage));
@@ -393,20 +395,31 @@ public class MainWindow extends Application {
 
     private VBox createFilterPane() {
         VBox filters = new VBox(5);
-        idFilter.setPromptText("ID");
-        nameFilter.setPromptText("Name");
+        idListView=new ListView<>();
+        idListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        idListView.setMaxHeight(100);
+        nameListView=new ListView<>();
+        nameListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        nameListView.setMaxHeight(100);
         categoryListView = new ListView<>();
         categoryListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         categoryListView.setMaxHeight(100);
         civListView = new ListView<>();
         civListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         civListView.setMaxHeight(100);
-        locationFilter.setPromptText("Location");
+        locListView = new ListView<>();
+        locListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        locListView.setMaxHeight(100);
         dateFilter.setPromptText("Date");
         startDateFilter.setPromptText("Start Date");
         endDateFilter.setPromptText("End Date");
-        placeFilter.setPromptText("Place");
-        compositionFilter.setPromptText("Composition");
+        placeListView = new ListView<>();
+        placeListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        placeListView.setMaxHeight(100);
+        comListView = new ListView<>();
+        comListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        comListView.setMaxHeight(100);
+
 
         categoryListView.getItems().setAll(
                 artifactList.stream().map(Artifact::getCategory).distinct().collect(Collectors.toList())
@@ -414,6 +427,22 @@ public class MainWindow extends Application {
         civListView.getItems().setAll(
                 artifactList.stream().map(Artifact::getCivilization).distinct().collect(Collectors.toList())
         );
+        idListView.getItems().setAll(
+                artifactList.stream().map(Artifact::getArtifactId).distinct().collect(Collectors.toList())
+        );
+        nameListView.getItems().setAll(
+                artifactList.stream().map(Artifact::getArtifactName).distinct().collect(Collectors.toList())
+        );
+        locListView.getItems().setAll(
+                artifactList.stream().map(Artifact::getDiscoveryLocation).distinct().collect(Collectors.toList())
+        );
+        placeListView.getItems().setAll(
+                artifactList.stream().map(Artifact::getCurrentPlace).distinct().collect(Collectors.toList())
+        );
+        comListView.getItems().setAll(
+                artifactList.stream().map(Artifact::getComposition).distinct().collect(Collectors.toList())
+        );
+
         // For Category Filter
         categoryCheckBoxVBox.setSpacing(5);
         categoryCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
@@ -424,8 +453,6 @@ public class MainWindow extends Application {
                 .forEach(categoryCheckBoxVBox.getChildren()::add);
 
         categoryListView.setMaxWidth(Double.MAX_VALUE);
-        VBox categoryFilterBox = new VBox(10, new Label("Categories"), categoryCheckBoxVBox);
-
         // For Civilization Filter
         civCheckBoxVBox.setSpacing(5);
         civCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
@@ -436,7 +463,6 @@ public class MainWindow extends Application {
                 .forEach(civCheckBoxVBox.getChildren()::add);
 
         civListView.setMaxWidth(Double.MAX_VALUE);
-        VBox civFilterBox = new VBox(10, new Label("Civilizations"), civCheckBoxVBox);
 
         tagCheckBoxVBox.setSpacing(5);
         tagCheckBoxVBox.setMaxHeight(100);
@@ -452,8 +478,55 @@ public class MainWindow extends Application {
                 .map(tag -> new CheckBox(tag))
                 .forEach(tagCheckBoxVBox.getChildren()::add);
 
-        VBox tagFilterBox = new VBox(10, new Label("Tags"), tagCheckBoxVBox);
+        // For ID Filter
+        idCheckBoxVBox.setSpacing(5);
+        idCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
 
+        // Populate id checkboxes
+        idListView.getItems().stream()
+                .map(id -> new CheckBox(id))
+                .forEach(idCheckBoxVBox.getChildren()::add);
+        idCheckBoxVBox.setMaxWidth(Double.MAX_VALUE);
+
+        // For name Filter
+        nameCheckBoxVBox.setSpacing(5);
+        nameCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
+
+        // Populate name checkboxes
+        nameListView.getItems().stream()
+                .map(name -> new CheckBox(name))
+                .forEach(nameCheckBoxVBox.getChildren()::add);
+        nameCheckBoxVBox.setMaxWidth(Double.MAX_VALUE);
+
+        // For location Filter
+        locCheckBoxVBox.setSpacing(5);
+        locCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
+
+        // Populate location checkboxes
+        locListView.getItems().stream()
+                .map(location -> new CheckBox(location))
+                .forEach(locCheckBoxVBox.getChildren()::add);
+        locCheckBoxVBox.setMaxWidth(Double.MAX_VALUE);
+
+        // For place Filter
+        placeCheckBoxVBox.setSpacing(5);
+        placeCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
+
+        // Populate place checkboxes
+        placeListView.getItems().stream()
+                .map(place -> new CheckBox(place))
+                .forEach(placeCheckBoxVBox.getChildren()::add);
+        placeCheckBoxVBox.setMaxWidth(Double.MAX_VALUE);
+
+        // For composition Filter
+        comCheckBoxVBox.setSpacing(5);
+        comCheckBoxVBox.setMaxHeight(100); // Adjust height as needed
+
+        // Populate composition checkboxes
+        comListView.getItems().stream()
+                .map(composition -> new CheckBox(composition))
+                .forEach(comCheckBoxVBox.getChildren()::add);
+        comCheckBoxVBox.setMaxWidth(Double.MAX_VALUE);
 
         Button applyFiltersButton = new Button("Apply Filters");
         Button clearFiltersButton = new Button("Clear Filters");
@@ -527,26 +600,27 @@ public class MainWindow extends Application {
         filterScrollPane.setFitToHeight(true);
         filterScrollPane.setFitToWidth(true);
 
-        VBox filterPanel = new VBox(headerPane,selectedFiltersBox, filterScrollPane );
+        VBox filterPanel = new VBox(headerPane, selectedFiltersBox, filterScrollPane);
 
         //filter özelliklerinin istendiğinde listelenmesi
         Accordion accordion = new Accordion();
         accordion.getPanes().addAll(
+                new TitledPane("ID", idCheckBoxVBox),
                 new TitledPane("Categories", categoryCheckBoxVBox),
                 new TitledPane("Civilizations", civCheckBoxVBox),
+                new TitledPane("Compositions", comCheckBoxVBox),
+                new TitledPane("Location", locCheckBoxVBox),
+                new TitledPane("Name", nameCheckBoxVBox),
+                new TitledPane("Place", placeCheckBoxVBox),
                 new TitledPane("Tags", tagCheckBoxVBox)
         );
+
         VBox staticFilters = new VBox(10,
-                idFilter, nameFilter, locationFilter,
-                startDateFilter, endDateFilter,
-                placeFilter, compositionFilter
+                startDateFilter, endDateFilter
         );
         filters.getChildren().addAll(staticFilters, accordion, buttons);
 
         applyFiltersButton.setOnAction(e -> {
-            String selectedId = idFilter.getText();
-            String selectedName = nameFilter.getText();
-
             // Get selected categories and civilizations
             List<String> selectedCategories = categoryCheckBoxVBox.getChildren().stream()
                     .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
@@ -558,13 +632,35 @@ public class MainWindow extends Application {
                     .map(node -> ((CheckBox) node).getText())
                     .collect(Collectors.toList());
 
-            String selectedLocation = locationFilter.getText();
             LocalDate selectedStartDate = startDateFilter.getValue();
             LocalDate selectedEndDate = endDateFilter.getValue();
-            String selectedCurrentPlace = placeFilter.getText();
-            String selectedComposition = compositionFilter.getText();
 
             List<String> selectedTags = tagCheckBoxVBox.getChildren().stream()
+                    .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
+                    .map(node -> ((CheckBox) node).getText())
+                    .collect(Collectors.toList());
+
+            List<String> selectedId = idCheckBoxVBox.getChildren().stream()
+                    .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
+                    .map(node -> ((CheckBox) node).getText())
+                    .collect(Collectors.toList());
+
+            List<String> selectedName = nameCheckBoxVBox.getChildren().stream()
+                    .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
+                    .map(node -> ((CheckBox) node).getText())
+                    .collect(Collectors.toList());
+
+            List<String> selectedLocation = locCheckBoxVBox.getChildren().stream()
+                    .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
+                    .map(node -> ((CheckBox) node).getText())
+                    .collect(Collectors.toList());
+
+            List<String> selectedPlace = placeCheckBoxVBox.getChildren().stream()
+                    .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
+                    .map(node -> ((CheckBox) node).getText())
+                    .collect(Collectors.toList());
+
+            List<String> selectedComposition = comCheckBoxVBox.getChildren().stream()
                     .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
                     .map(node -> ((CheckBox) node).getText())
                     .collect(Collectors.toList());
@@ -573,7 +669,7 @@ public class MainWindow extends Application {
             applyFilters(
                     selectedId, selectedName, selectedCategories, selectedCivs, selectedTags,
                     selectedLocation, selectedStartDate, selectedEndDate,
-                    selectedCurrentPlace, selectedComposition,
+                    selectedPlace, selectedComposition,
                     selectedIdLabel, selectedNameLabel, selectedCategoryLabel,
                     selectedCivLabel, selectedTagLabel, selectedLocationLabel, selectedDateLabel,
                     selectedCurrentPlaceLabel, selectedCompositionLabel
@@ -583,7 +679,7 @@ public class MainWindow extends Application {
             boolean isFilterApplied = !selectedId.isEmpty() || !selectedName.isEmpty() ||
                     !selectedCategories.isEmpty() || !selectedCivs.isEmpty() || !selectedTags.isEmpty() ||
                     !selectedLocation.isEmpty() || selectedStartDate != null || selectedEndDate != null ||
-                    !selectedCurrentPlace.isEmpty() || !selectedComposition.isEmpty();
+                    !selectedPlace.isEmpty() || !selectedComposition.isEmpty();
 
             // Eğer filtreler uygulanmışsa kutuyu göster, yoksa gizle
             if (isFilterApplied) {
@@ -601,15 +697,15 @@ public class MainWindow extends Application {
         });
 
         clearFiltersButton.setOnAction(e -> {
-            idFilter.clear();
-            nameFilter.clear();
+            idListView.getSelectionModel().clearSelection();
+            nameListView.getSelectionModel().clearSelection();
             categoryListView.getSelectionModel().clearSelection();
             civListView.getSelectionModel().clearSelection();
-            locationFilter.clear();
+            locListView.getSelectionModel().clearSelection();
             startDateFilter.setValue(null);
             endDateFilter.setValue(null);
-            placeFilter.clear();
-            compositionFilter.clear();
+            placeListView.getSelectionModel().clearSelection();
+            comListView.getSelectionModel().clearSelection();
 
             // CheckBox'ların seçimini temizle
             categoryCheckBoxVBox.getChildren().forEach(node -> {
@@ -623,6 +719,31 @@ public class MainWindow extends Application {
                 }
             });
             tagCheckBoxVBox.getChildren().forEach(node -> {
+                if (node instanceof CheckBox) {
+                    ((CheckBox) node).setSelected(false);
+                }
+            });
+            idCheckBoxVBox.getChildren().forEach(node -> {
+                if (node instanceof CheckBox) {
+                    ((CheckBox) node).setSelected(false);
+                }
+            });
+            nameCheckBoxVBox.getChildren().forEach(node -> {
+                if (node instanceof CheckBox) {
+                    ((CheckBox) node).setSelected(false);
+                }
+            });
+            locCheckBoxVBox.getChildren().forEach(node -> {
+                if (node instanceof CheckBox) {
+                    ((CheckBox) node).setSelected(false);
+                }
+            });
+            placeCheckBoxVBox.getChildren().forEach(node -> {
+                if (node instanceof CheckBox) {
+                    ((CheckBox) node).setSelected(false);
+                }
+            });
+            comCheckBoxVBox.getChildren().forEach(node -> {
                 if (node instanceof CheckBox) {
                     ((CheckBox) node).setSelected(false);
                 }
@@ -653,9 +774,9 @@ public class MainWindow extends Application {
     }
 
     private void applyFilters(
-            String selectedId, String selectedName, List<String> selectedCategories, List<String> selectedCivs,
-            List<String> selectedTags, String selectedLocation, LocalDate selectedStartDate, LocalDate selectedEndDate,
-            String selectedCurrentPlace, String selectedComposition,
+            List<String> selectedId, List<String> selectedName, List<String> selectedCategories, List<String> selectedCivs,
+            List<String> selectedTags, List<String> selectedLocation, LocalDate selectedStartDate, LocalDate selectedEndDate,
+            List<String> selectedCurrentPlace, List<String> selectedComposition,
             Label selectedIdLabel, Label selectedNameLabel, Label selectedCategoryLabel,
             Label selectedCivLabel, Label selectedTagLabel, Label selectedLocationLabel, Label selectedDateLabel,
             Label selectedCurrentPlaceLabel, Label selectedCompositionLabel
@@ -672,12 +793,12 @@ public class MainWindow extends Application {
         }
 
         List<Artifact> filtered = artifactList.stream()
-                .filter(a -> selectedId.isEmpty() || String.valueOf(a.getArtifactId()).equals(selectedId))
-                .filter(a -> a.getArtifactName().toLowerCase().contains(nameFilter.getText().toLowerCase()))
+                .filter(a -> selectedId.isEmpty() || selectedId.contains(a.getArtifactId()))
+                .filter(a -> selectedName.isEmpty() || selectedName.contains(a.getArtifactName()))
                 .filter(a -> selectedCategories.isEmpty() || selectedCategories.contains(a.getCategory()))
                 .filter(a -> selectedCivs.isEmpty() || selectedCivs.contains(a.getCivilization()))
                 .filter(a -> selectedTags.isEmpty() || (a.getTags() != null && a.getTags().stream().anyMatch(selectedTags::contains)))
-                .filter(a -> a.getDiscoveryLocation().toLowerCase().contains(locationFilter.getText().toLowerCase()))
+                .filter(a -> selectedLocation.isEmpty() || selectedLocation.contains(a.getDiscoveryLocation()))
                 .filter(a -> {
                     try {
                         LocalDate discoveryDate = a.getDiscoveryDate();
@@ -694,15 +815,15 @@ public class MainWindow extends Application {
                         return false;
                     }
                 })
-                .filter(a -> a.getCurrentPlace().toLowerCase().contains(placeFilter.getText().toLowerCase()))
-                .filter(a -> a.getComposition().toLowerCase().contains(compositionFilter.getText().toLowerCase()))
+                .filter(a -> selectedCurrentPlace.isEmpty() || selectedCurrentPlace.contains(a.getCurrentPlace()))
+                .filter(a -> selectedComposition.isEmpty() || selectedComposition.contains(a.getComposition()))
                 .collect(Collectors.toList());
 
         tableView.getItems().setAll(filtered);
         tableView.refresh();
         // ID
         if (!selectedId.isEmpty()) {
-            selectedIdLabel.setText("ID: " + selectedId);
+            selectedIdLabel.setText("ID: " + String.join(", ", selectedId));
             selectedIdLabel.setVisible(true);
             selectedIdLabel.setManaged(true);
         } else {
@@ -712,7 +833,7 @@ public class MainWindow extends Application {
 
         // Name
         if (!selectedName.isEmpty()) {
-            selectedNameLabel.setText("Name: " + selectedName);
+            selectedNameLabel.setText("Name: " + String.join(", ", selectedName));
             selectedNameLabel.setVisible(true);
             selectedNameLabel.setManaged(true);
         } else {
@@ -751,7 +872,7 @@ public class MainWindow extends Application {
 
         // Location
         if (!selectedLocation.isEmpty()) {
-            selectedLocationLabel.setText("Location: " + selectedLocation);
+            selectedLocationLabel.setText("Location: " + String.join(", ", selectedLocation));
             selectedLocationLabel.setVisible(true);
             selectedLocationLabel.setManaged(true);
         } else {
@@ -779,7 +900,7 @@ public class MainWindow extends Application {
 
         // Current Place
         if (!selectedCurrentPlace.isEmpty()) {
-            selectedCurrentPlaceLabel.setText("Current Place: " + selectedCurrentPlace);
+            selectedCurrentPlaceLabel.setText("Current Place: "+ String.join(", ", selectedCurrentPlace));
             selectedCurrentPlaceLabel.setVisible(true);
             selectedCurrentPlaceLabel.setManaged(true);
         } else {
@@ -789,7 +910,7 @@ public class MainWindow extends Application {
 
         // Composition
         if (!selectedComposition.isEmpty()) {
-            selectedCompositionLabel.setText("Composition: " + selectedComposition);
+            selectedCompositionLabel.setText("Composition: " + String.join(", ", selectedComposition));
             selectedCompositionLabel.setVisible(true);
             selectedCompositionLabel.setManaged(true);
         } else {
@@ -1122,6 +1243,62 @@ public class MainWindow extends Application {
         allTags.stream()
                 .map(tag -> new CheckBox(tag))
                 .forEach(tagCheckBoxVBox.getChildren()::add);
+
+        comCheckBoxVBox.getChildren().clear();
+        List<String> compositions = artifactList.stream()
+                .map(Artifact::getComposition)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .collect(Collectors.toList());
+
+        compositions.stream()
+                .map(CheckBox::new)
+                .forEach(comCheckBoxVBox.getChildren()::add);
+
+        locCheckBoxVBox.getChildren().clear();
+        List<String> locations = artifactList.stream()
+                .map(Artifact::getDiscoveryLocation)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .collect(Collectors.toList());
+
+        locations.stream()
+                .map(CheckBox::new)
+                .forEach(locCheckBoxVBox.getChildren()::add);
+
+        placeCheckBoxVBox.getChildren().clear();
+        List<String> places = artifactList.stream()
+                .map(Artifact::getCurrentPlace)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .collect(Collectors.toList());
+
+        places.stream()
+                .map(CheckBox::new)
+                .forEach(placeCheckBoxVBox.getChildren()::add);
+
+        nameCheckBoxVBox.getChildren().clear();
+        List<String> names = artifactList.stream()
+                .map(Artifact::getArtifactName)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .collect(Collectors.toList());
+
+        names.stream()
+                .map(CheckBox::new)
+                .forEach(nameCheckBoxVBox.getChildren()::add);
+
+
+        idCheckBoxVBox.getChildren().clear();
+        List<String> ids = artifactList.stream()
+                .map(Artifact::getArtifactId)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .collect(Collectors.toList());
+
+        ids.stream()
+                .map(CheckBox::new)
+                .forEach(idCheckBoxVBox.getChildren()::add);
     }
 
     private void showArtifactDetailsDialog(Artifact artifact) {
