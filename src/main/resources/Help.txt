@@ -1,8 +1,62 @@
-Welcome to the Historical Artifact Catalog!
+ Historical Artifact Catalog - User Manual
 
-- Use "File > Import File" to load artifacts from a JSON file.
-- Use "File > Export File" to save your current artifacts.
-- Use the table to view all artifact details.
-- You can add, edit, or delete entries in future versions.
+Welcome to the Historical Artifact Catalog Application. This software allows you to manage, search, and view information about historical artifacts in a structured and user-friendly way.
 
-Thank you for using our catalog!
+──────────────────────────────
+ MAIN FEATURES
+
+1. View Artifacts
+- Upon launching the application, all saved artifacts are displayed in a table.
+- You can double-click any row to view full details including image (if available).
+
+2. Create a New Artifact
+- Go to the "Operations" menu and click "Create Artifact".
+- Fill in details such as name, category, civilization, discovery location, date, place, composition.
+- Optionally select an image file for the artifact.
+- After saving, the artifact will appear in the main table.
+
+3. Edit an Artifact
+- Select an artifact from the table and go to "Edit Artifact" in the "Operations" menu.
+- Make changes to any field, and optionally change the image.
+- Click Save to update.
+
+4. Delete an Artifact
+- Select an artifact and choose "Delete Artifact".
+- The artifact and its image (if any) will be permanently deleted.
+
+5. Import & Export Files
+- Go to "File" menu:
+  • "Import File" allows importing one or more `.json` files containing artifacts.
+  • "Import Image Folder" allows you to import a folder of images.
+  • "Export File" saves your artifacts to a JSON file.
+  • "Export Pictures" copies all associated images to a folder of your choice.
+
+6. Filtering Artifacts
+- Click the "Filter" menu to open filtering options.
+- You can filter by ID, Name, Category, Civilization, Tags, Composition, Location, Current Place, and Discovery Date range.
+- Use the checkboxes to apply filters.
+- Click "Apply Filters" to see results in the table.
+- Click "Clear Filters" to reset.
+
+7. View Help
+- Access this manual anytime from the "Help" menu.
+
+──────────────────────────────
+ FILE & IMAGE HANDLING
+
+• Artifacts are stored in a `default.json` file.
+• Images are stored in an `images/` folder.
+• The `imagePath` is saved in the JSON. If an image is missing, the program handles it gracefully.
+• On each import or artifact creation, IDs are auto-generated if missing.
+
+──────────────────────────────
+ TIPS & NOTES
+
+- Artifacts must have a unique ID. If missing, one will be created using date + location + name prefix.
+- You can use this application to prepare catalog entries and export them for future reference or sharing.
+- The software gracefully handles incomplete or partially filled JSON files.
+- The interface is designed to be responsive and intuitive.
+
+──────────────────────────────
+✔ Have fun exploring history!
+
