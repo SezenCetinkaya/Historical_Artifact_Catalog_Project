@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import javafx.application.Application;
 import javafx.beans.property.*;
 import javafx.geometry.*;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.*;
@@ -1294,8 +1295,15 @@ public class MainWindow extends Application {
         dialog.getDialogPane().setMaxHeight(500);
         dialog.setResizable(false); // Kullanıcı boyutlandıramasın
 
-        ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(okButtonType);
+        ButtonType dummyClose = new ButtonType("", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().add(dummyClose);
+
+       // Butonun görünmemesi için stil uygula
+        Node closeButton = dialog.getDialogPane().lookupButton(dummyClose);
+        if (closeButton != null) {
+            closeButton.setVisible(false);
+            closeButton.setManaged(false);
+        }
 
         VBox content = new VBox(10);
         content.setPadding(new Insets(10));
