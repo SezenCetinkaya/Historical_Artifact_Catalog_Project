@@ -1008,10 +1008,11 @@ public class MainWindow extends Application {
                             artifact.setArtifactId();
                         }
 
-                        // artifactId'ye göre kontrol et
-                        if (!existingArtifacts.contains(artifact)) {
+                        boolean alreadyExists = artifactList.stream()
+                                .anyMatch(a -> a.getArtifactId().equals(artifact.getArtifactId()));
+
+                        if (!alreadyExists) {
                             artifactList.add(artifact);
-                            existingArtifacts.add(artifact);
                         }
                     }
 
