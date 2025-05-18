@@ -1175,9 +1175,16 @@ public class MainWindow extends Application {
                 newArtifact.setDiscoveryDate(datePicker.getValue() != null ? datePicker.getValue() : newArtifact.getDiscoveryDate());
                 newArtifact.setCurrentPlace(placeField.getText().isEmpty() ? newArtifact.getCurrentPlace() : placeField.getText());
                 newArtifact.setComposition(compositionField.getText().isEmpty() ? newArtifact.getComposition() : compositionField.getText());
+                newArtifact.setArtifactId();
 
                 // artifactList'e ekleyip ID'sini oluşturduktan sonra kaydedilecek
-                artifactList.add(newArtifact);
+                boolean alreadyExists = artifactList.stream()
+                        .anyMatch(a -> a.getArtifactId().equals(newArtifact.getArtifactId()));
+
+                if (!alreadyExists) {
+                    artifactList.add(newArtifact);
+                }
+                
                 saveToDefault(); // ID atanmış olur (eğer ID otomatikse)
                 updateFilters();
                 tableView.getItems().setAll(artifactList);
