@@ -1034,6 +1034,14 @@ public class MainWindow extends Application {
         }
     }
 
+    private File getDefaultJsonFile() {
+        String appData = System.getenv("APPDATA"); // Windows için AppData\Roaming
+        File programDir = new File(appData, "HistoricalArtifactCatalog"); // Kendi klasörün
+        if (!programDir.exists()) {
+            programDir.mkdirs(); // Yoksa oluştur
+        }
+        return new File(programDir, "default.json"); // Oradaki default.json dosyası
+    }
     private void saveToDefault() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
@@ -1043,7 +1051,8 @@ public class MainWindow extends Application {
         manager.setArtifacts(artifactList);
 
         try {
-            mapper.writerWithDefaultPrettyPrinter().writeValue(new File("default.json"), manager);
+            File defaultFile = getDefaultJsonFile(); // Değişiklik burada
+            mapper.writerWithDefaultPrettyPrinter().writeValue(defaultFile, manager);
             System.out.println("Saved artifacts to default.json");
 
         } catch (IOException e) {
@@ -1054,7 +1063,7 @@ public class MainWindow extends Application {
 
 
     private void loadDefaultArtifacts() {
-        File defaultFile = new File("default.json");
+        File defaultFile = getDefaultJsonFile(); // Değişiklik burada
         if (defaultFile.exists()) {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
