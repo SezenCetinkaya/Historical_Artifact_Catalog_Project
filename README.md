@@ -84,23 +84,36 @@ mvn javafx:run
 🛠️ Installer Information (Inno Setup)
 
 An official Windows installer (.exe) has been created using Inno Setup for easier deployment of the application. The installer:
+
 -Automatically copies the ArtifactCatalog.exe to the selected installation directory
+
 -Creates necessary folders and adds optional Start Menu/Desktop shortcuts
+
 -Includes a bundled Java Runtime (no separate installation required)
+
 -Offers a clean and user-friendly setup process
 
 📦 Installation Steps
 
+
 1.Run the ArtifactCatalog_Installer.exe file
+
 2.Follow the setup wizard instructions
+
 3.(Optional) A desktop shortcut will be created after installation
+
 4.Launch the application via the shortcut or from the installation folder
+
 
 🔧 Notes
 
 *Built with Inno Setup 6
+
 *The installer includes the ArtifactCatalog.exe generated via jpackage
+
 *Default installation directory is: C:\Program Files\ArtifactCatalog (modifiable during setup)
+
 *No need to install Java separately — the runtime is bundled with the application
+
 
  
